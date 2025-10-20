@@ -28,6 +28,7 @@
     "test:types": "next typegen . && tsc --noEmit"
   },
   "dependencies": {
+    "@ai-models/vercel-gateway": "workspace:*",
     "@ai-sdk-tools/devtools": "^0.8.4",
     "@ai-sdk/anthropic": "^2.0.3",
     "@ai-sdk/gateway": "1.0.23",
@@ -123,11 +124,13 @@
     "embla-carousel-react": "^8.6.0",
     "exa-js": "^1.5.12",
     "fast-deep-equal": "^3.1.3",
+    "framer-motion": "^12.23.24",
     "geist": "^1.4.2",
     "harden-react-markdown": "^1.0.4",
     "input-otp": "^1.4.2",
     "install": "^0.13.0",
     "js-tiktoken": "^1.0.19",
+    "katex": "^0.16.25",
     "langfuse": "^3.37.0",
     "langfuse-vercel": "^3.37.0",
     "lexical": "^0.32.1",
@@ -165,6 +168,7 @@
     "remark-math": "^6.0.0",
     "resumable-stream": "2.2.0",
     "server-only": "^0.0.1",
+    "shiki": "^3.13.0",
     "sonner": "^2.0.7",
     "streamdown": "^1.0.11",
     "superjson": "^2.2.2",
@@ -178,8 +182,7 @@
     "vaul": "^1.1.2",
     "vercel": "^42.1.1",
     "zod": "^4.1.4",
-    "zustand": "^5.0.6",
-    "@ai-models/vercel-gateway": "workspace:*"
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.6",

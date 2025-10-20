@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS "session" (
 	CONSTRAINT "session_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
+ALTER TABLE "User" ADD COLUMN "createdAt" timestamp DEFAULT now() NOT NULL;--> statement-breakpoint
 ALTER TABLE "User" RENAME TO "user";--> statement-breakpoint
 ALTER TABLE "user" RENAME COLUMN "createdAt" TO "created_at";--> statement-breakpoint
 ALTER TABLE "user" RENAME COLUMN "updatedAt" TO "updated_at";--> statement-breakpoint
