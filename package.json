@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@ai-sdk-tools/devtools": "^0.8.4",
+    "@ai-sdk-tools/store": "^0.9.0",
     "@ai-sdk/anthropic": "^2.0.3",
     "@ai-sdk/gateway": "2.0.0",
     "@ai-sdk/google": "^2.0.6",
@@ -32,6 +33,7 @@
     "@ai-sdk/provider-utils": "^3.0.3",
     "@ai-sdk/react": "^2.0.22",
     "@ai-sdk/xai": "^2.0.7",
+    "@airegistry/vercel-gateway": "0.0.3",
     "@codemirror/lang-javascript": "^6.2.2",
     "@codemirror/lang-python": "^6.1.6",
     "@codemirror/state": "^6.5.0",
@@ -175,8 +177,7 @@
     "vaul": "^1.1.2",
     "vercel": "^42.1.1",
     "zod": "^4.1.4",
-    "zustand": "^5.0.6",
-    "@airegistry/vercel-gateway": "0.0.3"
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.6",
