@@ -2,9 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-export const runtime = "nodejs";
-
-export default async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   // Mirror previous authorized() logic using Better Auth session
   const url = req.nextUrl;
   const isApiAuthRoute = url.pathname.startsWith("/api/auth");
