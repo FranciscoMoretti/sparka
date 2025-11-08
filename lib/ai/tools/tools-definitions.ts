@@ -61,6 +61,11 @@ export const toolsDefinitions: Record<ToolName, ToolDefinition> = {
     description: "Research a topic",
     cost: 50,
   },
+  geminiRag: {
+    name: "geminiRag",
+    description: "Query Gemini RAG with current attachments; ephemeral store with immediate teardown",
+    cost: 10,
+  },
 };
 
 export const allTools = toolNameSchema.options;

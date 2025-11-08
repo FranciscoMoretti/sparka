@@ -26,6 +26,7 @@ export const env = createEnv({
     // Optional features
     REDIS_URL: z.string().optional(),
     OPENAI_API_KEY: z.string().optional(),
+    GOOGLE_GENAI_API_KEY: z.string().optional(),
     TAVILY_API_KEY: z.string().optional(),
     EXA_API_KEY: z.string().optional(),
     FIRECRAWL_API_KEY: z.string().optional(),

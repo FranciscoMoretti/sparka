@@ -43,6 +43,7 @@
     "@codemirror/theme-one-dark": "^6.1.2",
     "@codemirror/view": "^6.35.3",
     "@e2b/code-interpreter": "^1.0.4",
+    "@google/genai": "^1.29.0",
     "@hookform/resolvers": "^5.2.1",
     "@lexical/code": "^0.32.1",
     "@lexical/html": "^0.32.1",

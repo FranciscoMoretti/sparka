@@ -15,6 +15,7 @@ import type { retrieve } from "@/lib/ai/tools/retrieve";
 import type { stockChart } from "@/lib/ai/tools/stock-chart";
 import type { updateDocument } from "@/lib/ai/tools/update-document";
 import type { tavilyWebSearch } from "@/lib/ai/tools/web-search";
+import type { geminiRag } from "@/lib/ai/tools/gemini-rag";
 import type { Suggestion } from "@/lib/db/schema";
 import type { ArtifactKind } from "../artifacts/artifact-kind";
 import type { AppModelId } from "./app-models";
@@ -33,6 +34,7 @@ export const toolNameSchema = z.enum([
   "codeInterpreter",
   "generateImage",
   "deepResearch",
+  "geminiRag",
 ]);
 
 const _ = toolNameSchema.options satisfies ToolName[];
@@ -73,6 +75,7 @@ type webSearchTool = InferUITool<ReturnType<typeof tavilyWebSearch>>;
 type stockChartTool = InferUITool<typeof stockChart>;
 type codeInterpreterTool = InferUITool<typeof codeInterpreter>;
 type retrieveTool = InferUITool<typeof retrieve>;
+type geminiRagTool = InferUITool<ReturnType<typeof geminiRag>>;
 
 export type ChatTools = {
   getWeather: weatherTool;
@@ -86,6 +89,7 @@ export type ChatTools = {
   stockChart: stockChartTool;
   codeInterpreter: codeInterpreterTool;
   retrieve: retrieveTool;
+  geminiRag: geminiRagTool;
 };
 
 type FollowupSuggestions = {

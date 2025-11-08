@@ -14,6 +14,7 @@ import type { Session } from "@/lib/auth";
 import { siteConfig } from "@/lib/config";
 import type { StreamWriter } from "../types";
 import { deepResearch } from "./deep-research/deep-research";
+import { geminiRag } from "./gemini-rag";
 
 export function getTools({
   dataStream,
@@ -84,5 +85,6 @@ export function getTools({
           }),
         }
       : {}),
+    geminiRag: geminiRag({ attachments }),
   };
 }
