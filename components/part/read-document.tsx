@@ -1,7 +1,7 @@
 "use client";
 
 import { memo } from "react";
-import { FileIcon } from "./icons";
+import { FileIcon } from "../icons";
 
 type ReadDocumentProps = {
   result?: {

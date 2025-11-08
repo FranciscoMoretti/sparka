@@ -3,7 +3,7 @@
 import { memo } from "react";
 import { useMessagePartByPartIdx } from "@/lib/stores/hooks-message-parts";
 
-import { Response } from "./ai-elements/response";
+import { Response } from "../ai-elements/response";
 
 export const TextMessagePart = memo(function TextMessagePart({
   messageId,

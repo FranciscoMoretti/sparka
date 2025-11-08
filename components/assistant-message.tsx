@@ -7,7 +7,7 @@ import {
 } from "./ai-elements/message";
 import { FollowUpSuggestionsParts } from "./followup-suggestions";
 import { MessageActions } from "./message-actions";
-import { SourcesAnnotations } from "./message-annotations";
+import { SourcesAnnotations } from "./part/message-annotations";
 import { MessageParts } from "./message-parts";
 import { PartialMessageLoading } from "./partial-message-loading";
 import type { BaseMessageProps } from "./user-message";

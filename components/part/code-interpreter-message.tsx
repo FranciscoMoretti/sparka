@@ -1,5 +1,5 @@
-import { CollapsibleSection } from "./collapsible-section";
-import InteractiveChart, { type BaseChart } from "./interactive-charts";
+import { CollapsibleSection } from "../collapsible-section";
+import InteractiveChart, { type BaseChart } from "../interactive-charts";
 
 export function CodeInterpreterMessage({
   result,

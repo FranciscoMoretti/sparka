@@ -2,8 +2,8 @@ import { Check, Loader2, TrendingUpIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import InteractiveStockChart, {
   type StockChartProps,
-} from "./interactive-stock-chart";
-import { Badge } from "./ui/badge";
+} from "../interactive-stock-chart";
+import { Badge } from "../ui/badge";
 
 export function StockChartMessage({
   result,

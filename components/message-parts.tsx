@@ -8,17 +8,17 @@ import {
   useMessagePartsByPartRange,
   useMessagePartTypesById,
 } from "@/lib/stores/hooks-message-parts";
-import { CodeInterpreterMessage } from "./code-interpreter-message";
-import { DocumentToolCall, DocumentToolResult } from "./document";
-import { DocumentPreview } from "./document-preview";
-import { GeneratedImage } from "./generated-image";
-import { ResearchUpdates } from "./message-annotations";
-import { MessageReasoning } from "./message-reasoning";
-import { ReadDocument } from "./read-document";
-import { Retrieve } from "./retrieve";
-import { StockChartMessage } from "./stock-chart-message";
-import { TextMessagePart } from "./text-message-part";
-import { Weather } from "./weather";
+import { CodeInterpreterMessage } from "./part/code-interpreter-message";
+import { DocumentToolCall, DocumentToolResult } from "./part/document";
+import { DocumentPreview } from "./part/document-preview";
+import { GeneratedImage } from "./part/generated-image";
+import { ResearchUpdates } from "./part/message-annotations";
+import { MessageReasoning } from "./part/message-reasoning";
+import { ReadDocument } from "./part/read-document";
+import { Retrieve } from "./part/retrieve";
+import { StockChartMessage } from "./part/stock-chart-message";
+import { TextMessagePart } from "./part/text-message-part";
+import { Weather } from "./part/weather";
 
 type MessagePartsProps = {
   messageId: string;

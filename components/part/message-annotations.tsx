@@ -4,8 +4,8 @@ import type {
   WebSearchUpdate,
 } from "@/lib/ai/tools/research-updates-schema";
 import { useMessageResearchUpdatePartsById } from "@/lib/stores/hooks-base";
-import { ReasonSearchResearchProgress } from "./deep-research-progress";
-import { Sources } from "./sources";
+import { ReasonSearchResearchProgress } from "../deep-research-progress";
+import { Sources } from "../sources";
 
 export const SourcesAnnotations = memo(
   ({ messageId }: { messageId: string }) => {
