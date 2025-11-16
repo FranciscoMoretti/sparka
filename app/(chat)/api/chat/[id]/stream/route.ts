@@ -56,7 +56,7 @@ async function getStreamIds(
     .filter(Boolean);
 }
 
-function createEmptyStream(): ReadableStream<ChatMessage> {
+function createEmptyStream() {
   return createUIMessageStream<ChatMessage>({
     execute: () => {
       // Intentionally empty - used as a fallback stream when stream context is unavailable
@@ -67,7 +67,7 @@ function createEmptyStream(): ReadableStream<ChatMessage> {
 async function handleFallbackStream(
   chatId: string,
   resumeRequestedAt: Date,
-  emptyDataStream: ReadableStream<ChatMessage>
+  emptyDataStream: ReturnType<typeof createEmptyStream>
 ): Promise<Response | null> {
   const messages = await getAllMessagesByChatId({ chatId });
   const mostRecentMessage = messages.at(-1);

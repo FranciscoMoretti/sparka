@@ -246,12 +246,12 @@ async function getMessageThread(
   isAnonymous: boolean,
   chatId: string,
   anonymousPreviousMessages: ChatMessage[],
-  parentMessageId: string | undefined
+  parentMessageId: string | null | undefined
 ): Promise<ChatMessage[]> {
   if (isAnonymous) {
     return anonymousPreviousMessages;
   }
-  return await getThreadUpToMessageId(chatId, parentMessageId);
+  return await getThreadUpToMessageId(chatId, parentMessageId ?? null);
 }
 
 function getErrorStatusCode(errorMessage: string): number {
@@ -325,7 +325,7 @@ async function initializeChatRequest({
       success: true;
       anonymousSession: AnonymousSession | null;
       modelDefinition: AppModelDefinition;
-      selectedTool: string | null;
+      selectedTool: ToolName | null;
       explicitlyRequestedTools: ToolName[] | null;
       baseModelCost: number;
       reservation: CreditReservation | null;
@@ -393,7 +393,7 @@ async function initializeChatRequest({
     const { error: dbError } = await handleAuthenticatedUserDatabase({
       chatId,
       userMessage,
-      userId,
+      userId: userId as string,
       projectId,
       log,
     });
@@ -508,7 +508,7 @@ async function handleCreditReservation({
 
   if (!isAnonymous) {
     const { reservation: res, error: creditError } = await getCreditReservation(
-      userId,
+      userId as string,
       baseModelCost
     );
 
@@ -555,7 +555,7 @@ async function createAndReturnStream({
   userMessage: ChatMessage;
   previousMessages: ChatMessage[];
   selectedModelId: AppModelId;
-  selectedTool: string | null;
+  selectedTool: ToolName | null;
   activeTools: ToolName[];
   reservation: CreditReservation | null;
   baseModelCost: number;

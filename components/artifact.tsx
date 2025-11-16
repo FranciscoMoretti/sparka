@@ -351,11 +351,11 @@ function ArtifactWrapper({
               animate={{ width: windowWidth, right: 0 }}
               className="fixed h-dvh bg-background"
               exit={{
-                width: isSidebarOpen ? windowWidth - 256 : windowWidth,
+                width: isSidebarOpen ? (windowWidth ?? 0) - 256 : windowWidth ?? 0,
                 right: 0,
               }}
               initial={{
-                width: isSidebarOpen ? windowWidth - 256 : windowWidth,
+                width: isSidebarOpen ? (windowWidth ?? 0) - 256 : windowWidth ?? 0,
                 right: 0,
               }}
             />
@@ -687,11 +687,18 @@ function PureArtifact({
 
   const { windowWidth, windowHeight, isMobile } = useWindowAndMobileDetection();
 
+  const setMetadataWrapper = useCallback(
+    (updatedMetadata: Record<string, unknown>) => {
+      setMetadata(artifact.documentId, updatedMetadata);
+    },
+    [setMetadata, artifact.documentId]
+  );
+
   const artifactDefinition = useArtifactInitialization({
     artifact,
     isAuthenticated,
     queryClient,
-    setMetadata,
+    setMetadata: setMetadataWrapper,
     trpc,
   });
 
@@ -713,7 +720,7 @@ function PureArtifact({
       mode={mode}
       saveContent={saveContent}
       setIsToolbarVisible={setIsToolbarVisible}
-      setMetadata={setMetadata}
+      setMetadata={setMetadataWrapper}
       status={status}
       stop={stop}
       storeApi={storeApi}
