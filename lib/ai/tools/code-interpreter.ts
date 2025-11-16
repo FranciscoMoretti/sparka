@@ -4,6 +4,165 @@ import z from "zod";
 import { createModuleLogger } from "@/lib/logger";
 
 const WHITESPACE_REGEX = /\s+/;
+const CHART_PATH = "/tmp/chart.png";
+const BASE_PACKAGES = [
+  "matplotlib",
+  "pandas",
+  "numpy",
+  "sympy",
+  "yfinance",
+] as const;
+
+async function installPackages(
+  sandbox: Sandbox,
+  requestId: string,
+  packages: readonly string[],
+  isBase: boolean
+): Promise<string | null> {
+  const log = createModuleLogger("code-interpreter");
+  const result = await sandbox.runCommand({
+    cmd: "pip",
+    args: ["install", ...packages],
+  });
+  if (result.exitCode !== 0) {
+    const stderr = await result.stderr();
+    const packageType = isBase ? "base" : "dynamic";
+    log.error(
+      { requestId, stderr },
+      `${packageType} package installation failed`
+    );
+    return stderr;
+  }
+  return null;
+}
+
+function extractExtraPackages(code: string): {
+  packages: string[];
+  cleanedCode: string;
+} {
+  const lines = code.split("\n");
+  const pipLines = lines.filter((l) => l.trim().startsWith("!pip install "));
+  const packages = pipLines.flatMap((l) =>
+    l
+      .trim()
+      .slice("!pip install ".length)
+      .split(WHITESPACE_REGEX)
+      .filter(Boolean)
+  );
+  const cleanedCode = lines
+    .filter((l) => !l.trim().startsWith("!pip install "))
+    .join("\n");
+  return { packages, cleanedCode };
+}
+
+function createWrappedCode(codeToRun: string): string {
+  return `
+import sys
+import json
+import traceback
+
+try:
+    exec(${JSON.stringify(codeToRun)})
+    try:
+        _locals = locals()
+        _globals = globals()
+        if "result" in _locals:
+            print(_locals["result"])
+        elif "result" in _globals:
+            print(_globals["result"])
+        elif "results" in _locals:
+            print(_locals["results"])
+        elif "results" in _globals:
+            print(_globals["results"])
+    except Exception:
+        pass
+    try:
+        import matplotlib.pyplot as plt
+        if plt.get_fignums():
+            plt.savefig('${CHART_PATH}', format='png', bbox_inches='tight', dpi=100)
+            plt.close('all')
+    except ImportError:
+        pass
+    print(json.dumps({"success": True}))
+except Exception as e:
+    error_info = {"success": False, "error": {"name": type(e).__name__, "value": str(e), "traceback": traceback.format_exc()}}
+    print(json.dumps(error_info))
+    sys.exit(1)
+`;
+}
+
+function parseExecutionOutput(
+  stdout: string | null,
+  _stderr: string | null
+): {
+  execInfo: {
+    success: boolean;
+    error?: { name: string; value: string; traceback: string };
+  };
+  outputText: string;
+} {
+  let execInfo: {
+    success: boolean;
+    error?: { name: string; value: string; traceback: string };
+  } = { success: true };
+  let outputText = "";
+  try {
+    const outLines = (stdout ?? "").trim().split("\n");
+    const lastLine = outLines.at(-1);
+    execInfo = JSON.parse(lastLine ?? "");
+    outLines.pop(); // remove JSON marker
+    outputText = outLines.join("\n");
+  } catch {
+    outputText = stdout ?? "";
+  }
+  return { execInfo, outputText };
+}
+
+async function extractChart(
+  sandbox: Sandbox,
+  requestId: string
+): Promise<{ base64: string; format: string } | undefined> {
+  const log = createModuleLogger("code-interpreter");
+  const chartCheck = await sandbox.runCommand({
+    cmd: "test",
+    args: ["-f", CHART_PATH],
+  });
+  if (chartCheck.exitCode !== 0) {
+    return;
+  }
+  const b64 = await (
+    await sandbox.runCommand({
+      cmd: "base64",
+      args: ["-w", "0", CHART_PATH],
+    })
+  ).stdout();
+  log.info({ requestId }, "chart generated");
+  return { base64: (b64 ?? "").trim(), format: "png" };
+}
+
+function buildResponseMessage(
+  outputText: string,
+  stderr: string | null,
+  execInfo: {
+    success: boolean;
+    error?: { name: string; value: string; traceback: string };
+  },
+  requestId: string
+): string {
+  const log = createModuleLogger("code-interpreter");
+  let message = "";
+  if (outputText) {
+    message += `${outputText}\n`;
+  }
+  if (stderr && stderr.trim().length > 0) {
+    message += `${stderr}\n`;
+  }
+  if (execInfo.error) {
+    message += `Error: ${execInfo.error.name}: ${execInfo.error.value}\n`;
+    log.error({ requestId, error: execInfo.error }, "python execution error");
+  }
+  return message.trim();
+}
 
 export const codeInterpreter = tool({
   description: `Python-only sandbox for calculations, data analysis & simple visualisations.
@@ -36,18 +195,8 @@ Output rules:
     const log = createModuleLogger("code-interpreter");
     const requestId = `ci-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const runtime = process.env.VERCEL_SANDBOX_RUNTIME ?? "python3.13";
-    const basePackages = [
-      "matplotlib",
-      "pandas",
-      "numpy",
-      "sympy",
-      "yfinance",
-    ] as const;
-    const chartPath = "/tmp/chart.png";
 
     let sandbox: Sandbox | undefined;
-    let message = "";
-    let chart: { base64: string; format: string } | "";
 
     try {
       log.info({ requestId, title, runtime }, "creating sandbox");
@@ -60,94 +209,43 @@ Output rules:
       log.debug({ requestId }, "sandbox created");
 
       // Pre-install common data-science packages
-      const installStep = await sandbox.runCommand({
-        cmd: "pip",
-        args: ["install", ...basePackages],
-      });
-      if (installStep.exitCode !== 0) {
-        const installStderr = await installStep.stderr();
-        log.error(
-          { requestId, stderr: installStderr },
-          "base package installation failed"
-        );
+      const baseInstallError = await installPackages(
+        sandbox,
+        requestId,
+        BASE_PACKAGES,
+        true
+      );
+      if (baseInstallError) {
         return {
-          message: `Failed to install base packages: ${installStderr}`,
+          message: `Failed to install base packages: ${baseInstallError}`,
           chart: "",
         };
       }
       log.info({ requestId }, "base packages installed");
 
-      // Detect and install `!pip install ...` lines, then strip them
-      const lines = code.split("\n");
-      const pipLines = lines.filter((l) =>
-        l.trim().startsWith("!pip install ")
-      );
-      const extraPackages = pipLines.flatMap((l) =>
-        l
-          .trim()
-          .slice("!pip install ".length)
-          .split(WHITESPACE_REGEX)
-          .filter(Boolean)
-      );
-
+      // Detect and install extra packages
+      const { packages: extraPackages, cleanedCode } =
+        extractExtraPackages(code);
       let codeToRun = code;
       if (extraPackages.length > 0) {
         log.info({ requestId, extraPackages }, "installing extra packages");
-        const dynamicInstall = await sandbox.runCommand({
-          cmd: "pip",
-          args: ["install", ...extraPackages],
-        });
-        if (dynamicInstall.exitCode !== 0) {
-          const stderr = await dynamicInstall.stderr();
-          log.error(
-            { requestId, stderr },
-            "dynamic package installation failed"
-          );
+        const extraInstallError = await installPackages(
+          sandbox,
+          requestId,
+          extraPackages,
+          false
+        );
+        if (extraInstallError) {
           return {
-            message: `Failed to install packages: ${stderr}`,
+            message: `Failed to install packages: ${extraInstallError}`,
             chart: "",
           };
         }
-        codeToRun = lines
-          .filter((l) => !l.trim().startsWith("!pip install "))
-          .join("\n");
+        codeToRun = cleanedCode;
       }
 
-      // Wrap code to capture outputs and optionally save matplotlib chart
-      const wrappedCode = `
-import sys
-import json
-import traceback
-
-try:
-    exec(${JSON.stringify(codeToRun)})
-    try:
-        _locals = locals()
-        _globals = globals()
-        if "result" in _locals:
-            print(_locals["result"])
-        elif "result" in _globals:
-            print(_globals["result"])
-        elif "results" in _locals:
-            print(_locals["results"])
-        elif "results" in _globals:
-            print(_globals["results"])
-    except Exception:
-        pass
-    try:
-        import matplotlib.pyplot as plt
-        if plt.get_fignums():
-            plt.savefig('${chartPath}', format='png', bbox_inches='tight', dpi=100)
-            plt.close('all')
-    except ImportError:
-        pass
-    print(json.dumps({"success": True}))
-except Exception as e:
-    error_info = {"success": False, "error": {"name": type(e).__name__, "value": str(e), "traceback": traceback.format_exc()}}
-    print(json.dumps(error_info))
-    sys.exit(1)
-`;
-
+      // Execute wrapped code
+      const wrappedCode = createWrappedCode(codeToRun);
       log.info({ requestId, title }, "executing python code");
       const execResult = await sandbox.runCommand({
         cmd: "python3",
@@ -158,57 +256,23 @@ except Exception as e:
       const exitCode = execResult.exitCode;
       log.debug({ requestId, exitCode }, "python execution finished");
 
-      // Parse final JSON marker from stdout (best-effort)
-      let execInfo: {
-        success: boolean;
-        error?: { name: string; value: string; traceback: string };
-      } = { success: true };
-      let outputText = "";
-      try {
-        const outLines = (stdout ?? "").trim().split("\n");
-        const lastLine = outLines.at(-1);
-        execInfo = JSON.parse(lastLine);
-        outLines.pop(); // remove JSON marker
-        outputText = outLines.join("\n");
-      } catch {
-        outputText = stdout ?? "";
-      }
+      // Parse execution output
+      const { execInfo, outputText } = parseExecutionOutput(stdout, stderr);
 
-      // Check for chart file
-      let chartOut: { base64: string; format: string } | undefined;
-      const chartCheck = await sandbox.runCommand({
-        cmd: "test",
-        args: ["-f", chartPath],
-      });
-      if (chartCheck.exitCode === 0) {
-        const b64 = await (
-          await sandbox.runCommand({
-            cmd: "base64",
-            args: ["-w", "0", chartPath],
-          })
-        ).stdout();
-        chartOut = { base64: (b64 ?? "").trim(), format: "png" };
-        log.info({ requestId }, "chart generated");
-      }
+      // Extract chart if available
+      const chartOut = await extractChart(sandbox, requestId);
 
-      // Build response similar to previous shape
-      if (outputText) {
-        message += `${outputText}\n`;
-      }
-      if (stderr && stderr.trim().length > 0) {
-        message += `${stderr}\n`;
-      }
-      if (execInfo.error) {
-        message += `Error: ${execInfo.error.name}: ${execInfo.error.value}\n`;
-        log.error(
-          { requestId, error: execInfo.error },
-          "python execution error"
-        );
-      }
+      // Build response
+      const message = buildResponseMessage(
+        outputText,
+        stderr,
+        execInfo,
+        requestId
+      );
+      const chart = chartOut ?? "";
 
-      chart = chartOut ?? "";
       return {
-        message: message.trim(),
+        message,
         chart,
       };
     } catch (err) {

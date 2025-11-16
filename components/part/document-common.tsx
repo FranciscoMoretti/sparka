@@ -51,6 +51,19 @@ const getActionText = (
   }
 };
 
+const getIconForType = (type: "create" | "update" | "request-suggestions") => {
+  if (type === "create") {
+    return <FileIcon />;
+  }
+  if (type === "update") {
+    return <PencilEditIcon />;
+  }
+  if (type === "request-suggestions") {
+    return <MessageIcon />;
+  }
+  return null;
+};
+
 type DocumentToolResultProps = {
   type: "create" | "update" | "request-suggestions";
   result: {
@@ -96,15 +109,7 @@ function PureDocumentToolResult({
       }}
       type="button"
     >
-      <div className="mt-1 text-muted-foreground">
-        {type === "create" ? (
-          <FileIcon />
-        ) : type === "update" ? (
-          <PencilEditIcon />
-        ) : type === "request-suggestions" ? (
-          <MessageIcon />
-        ) : null}
-      </div>
+      <div className="mt-1 text-muted-foreground">{getIconForType(type)}</div>
       <div className="text-left">
         {`${getActionText(type, "past")} "${result.title}"`}
       </div>
@@ -149,15 +154,7 @@ function PureDocumentToolCall({
       type="button"
     >
       <div className="flex flex-row items-start gap-3">
-        <div className="mt-1 text-zinc-500">
-          {type === "create" ? (
-            <FileIcon />
-          ) : type === "update" ? (
-            <PencilEditIcon />
-          ) : type === "request-suggestions" ? (
-            <MessageIcon />
-          ) : null}
-        </div>
+        <div className="mt-1 text-zinc-500">{getIconForType(type)}</div>
 
         <div className="text-left">
           {`${getActionText(type, "present")} ${args.title ? `"${args.title}"` : ""}`}

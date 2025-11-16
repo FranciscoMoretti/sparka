@@ -5,8 +5,102 @@ import { ChatSDKError } from "@/lib/ai/errors";
 import type { ChatMessage } from "@/lib/ai/types";
 import { auth } from "@/lib/auth";
 import { getAllMessagesByChatId, getChatById } from "@/lib/db/queries";
-import type { Chat } from "@/lib/db/schema";
 import { getRedisPublisher, getStreamContext } from "../../route";
+
+async function validateChatPermissions(
+  chatId: string,
+  isAuthenticated: boolean,
+  userId: string | null
+): Promise<Response | null> {
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  const chat = await getChatById({ id: chatId });
+
+  if (!chat) {
+    return new ChatSDKError("not_found:chat").toResponse();
+  }
+
+  // If chat is not public, require authentication and ownership
+  if (chat.visibility !== "public" && chat.userId !== userId) {
+    console.log(
+      "RESPONSE > GET /api/chat: Unauthorized - chat ownership mismatch"
+    );
+    return new ChatSDKError("forbidden:chat").toResponse();
+  }
+
+  return null;
+}
+
+async function getStreamIds(
+  chatId: string,
+  isAuthenticated: boolean
+): Promise<string[]> {
+  const redisPublisher = getRedisPublisher();
+
+  if (!redisPublisher) {
+    return [];
+  }
+
+  const keyPattern = isAuthenticated
+    ? `sparka-ai:stream:${chatId}:*`
+    : `sparka-ai:anonymous-stream:${chatId}:*`;
+
+  const keys = await redisPublisher.keys(keyPattern);
+  return keys
+    .map((key: string) => {
+      const parts = key.split(":");
+      return parts.at(-1) || "";
+    })
+    .filter(Boolean);
+}
+
+function createEmptyStream(): ReadableStream<ChatMessage> {
+  return createUIMessageStream<ChatMessage>({
+    execute: () => {
+      // Intentionally empty - used as a fallback stream when stream context is unavailable
+    },
+  });
+}
+
+async function handleFallbackStream(
+  chatId: string,
+  resumeRequestedAt: Date,
+  emptyDataStream: ReadableStream<ChatMessage>
+): Promise<Response | null> {
+  const messages = await getAllMessagesByChatId({ chatId });
+  const mostRecentMessage = messages.at(-1);
+
+  if (!mostRecentMessage) {
+    return new Response(emptyDataStream, { status: 200 });
+  }
+
+  if (mostRecentMessage.role !== "assistant") {
+    return new Response(emptyDataStream, { status: 200 });
+  }
+
+  const messageCreatedAt = new Date(mostRecentMessage.metadata.createdAt);
+
+  if (differenceInSeconds(resumeRequestedAt, messageCreatedAt) > 15) {
+    return new Response(emptyDataStream, { status: 200 });
+  }
+
+  const restoredStream = createUIMessageStream<ChatMessage>({
+    execute: ({ writer }) => {
+      writer.write({
+        type: "data-appendMessage",
+        data: JSON.stringify(mostRecentMessage),
+        transient: true,
+      });
+    },
+  });
+
+  return new Response(
+    restoredStream.pipeThrough(new JsonToSseTransformStream()),
+    { status: 200 }
+  );
+}
 
 export async function GET(
   _: Request,
@@ -29,43 +123,16 @@ export async function GET(
   const userId = session?.user?.id || null;
   const isAuthenticated = userId !== null;
 
-  let _chat: Chat;
-
-  // For authenticated users, check DB permissions first
-  if (isAuthenticated) {
-    const chat = await getChatById({ id: chatId });
-
-    if (!chat) {
-      return new ChatSDKError("not_found:chat").toResponse();
-    }
-
-    // If chat is not public, require authentication and ownership
-    if (chat.visibility !== "public" && chat.userId !== userId) {
-      console.log(
-        "RESPONSE > GET /api/chat: Unauthorized - chat ownership mismatch"
-      );
-      return new ChatSDKError("forbidden:chat").toResponse();
-    }
+  const permissionError = await validateChatPermissions(
+    chatId,
+    isAuthenticated,
+    userId
+  );
+  if (permissionError) {
+    return permissionError;
   }
 
-  const redisPublisher = getRedisPublisher();
-
-  // Get streams from Redis for all users
-  let streamIds: string[] = [];
-
-  if (redisPublisher) {
-    const keyPattern = isAuthenticated
-      ? `sparka-ai:stream:${chatId}:*`
-      : `sparka-ai:anonymous-stream:${chatId}:*`;
-
-    const keys = await redisPublisher.keys(keyPattern);
-    streamIds = keys
-      .map((key: string) => {
-        const parts = key.split(":");
-        return parts.at(-1) || "";
-      })
-      .filter(Boolean);
-  }
+  const streamIds = await getStreamIds(chatId, isAuthenticated);
 
   if (!streamIds.length) {
     return new ChatSDKError("not_found:stream").toResponse();
@@ -77,11 +144,7 @@ export async function GET(
     return new ChatSDKError("not_found:stream").toResponse();
   }
 
-  const emptyDataStream = createUIMessageStream<ChatMessage>({
-    execute: () => {
-      // Intentionally empty - used as a fallback stream when stream context is unavailable
-    },
-  });
+  const emptyDataStream = createEmptyStream();
 
   const stream = await streamContext.resumableStream(recentStreamId, () =>
     emptyDataStream.pipeThrough(new JsonToSseTransformStream())
@@ -92,37 +155,14 @@ export async function GET(
    * but the resumable stream has concluded at this point.
    */
   if (!stream) {
-    const messages = await getAllMessagesByChatId({ chatId });
-    const mostRecentMessage = messages.at(-1);
-
-    if (!mostRecentMessage) {
-      return new Response(emptyDataStream, { status: 200 });
-    }
-
-    if (mostRecentMessage.role !== "assistant") {
-      return new Response(emptyDataStream, { status: 200 });
-    }
-
-    const messageCreatedAt = new Date(mostRecentMessage.metadata.createdAt);
-
-    if (differenceInSeconds(resumeRequestedAt, messageCreatedAt) > 15) {
-      return new Response(emptyDataStream, { status: 200 });
-    }
-
-    const restoredStream = createUIMessageStream<ChatMessage>({
-      execute: ({ writer }) => {
-        writer.write({
-          type: "data-appendMessage",
-          data: JSON.stringify(mostRecentMessage),
-          transient: true,
-        });
-      },
-    });
-
-    return new Response(
-      restoredStream.pipeThrough(new JsonToSseTransformStream()),
-      { status: 200 }
+    const fallbackResponse = await handleFallbackStream(
+      chatId,
+      resumeRequestedAt,
+      emptyDataStream
     );
+    if (fallbackResponse) {
+      return fallbackResponse;
+    }
   }
 
   return new Response(stream, { status: 200 });

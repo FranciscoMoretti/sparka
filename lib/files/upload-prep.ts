@@ -52,12 +52,14 @@ export async function compressImageIfNeeded(
     }
 
     const base = file.name.replace(FILE_EXTENSION_REGEX, "");
-    const ext =
-      outputMime === "image/jpeg"
-        ? "jpg"
-        : outputMime === "image/png"
-          ? "png"
-          : (outputMime.split("/")[1] ?? "jpg");
+    let ext: string;
+    if (outputMime === "image/jpeg") {
+      ext = "jpg";
+    } else if (outputMime === "image/png") {
+      ext = "png";
+    } else {
+      ext = outputMime.split("/")[1] ?? "jpg";
+    }
     return new File([resultBlob], `${base}.${ext}`, {
       type: outputMime,
       lastModified: Date.now(),

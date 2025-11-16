@@ -33,34 +33,52 @@ function findPositionsInEditor(
     const root = $getRoot();
     let currentPos = 0;
 
-    function traverse(node: LexicalNode) {
-      if ($isTextNode(node) && node.getTextContent().includes(searchText)) {
-        const text = node.getTextContent();
-        const index = text.indexOf(searchText);
+    function checkTextNodeForMatch(node: LexicalNode): boolean {
+      if (!$isTextNode(node)) {
+        return false;
+      }
 
-        if (index !== -1) {
-          positions = {
-            start: currentPos + index,
-            end: currentPos + index + searchText.length,
-          };
+      const text = node.getTextContent();
+      if (!text.includes(searchText)) {
+        return false;
+      }
+
+      const index = text.indexOf(searchText);
+      if (index === -1) {
+        return false;
+      }
+
+      positions = {
+        start: currentPos + index,
+        end: currentPos + index + searchText.length,
+      };
+      return true;
+    }
+
+    function traverseChildren(node: LexicalNode): void {
+      if (!$isElementNode(node)) {
+        return;
+      }
+
+      const children = node.getChildren();
+      for (const child of children) {
+        traverse(child);
+        if (positions) {
           return;
         }
+      }
+    }
+
+    function traverse(node: LexicalNode): void {
+      if (checkTextNodeForMatch(node)) {
+        return;
       }
 
       if ($isTextNode(node)) {
         currentPos += node.getTextContent().length;
       }
 
-      // Only element nodes have children
-      if ($isElementNode(node)) {
-        const children = node.getChildren();
-        for (const child of children) {
-          traverse(child);
-          if (positions) {
-            return;
-          }
-        }
-      }
+      traverseChildren(node);
     }
 
     traverse(root);

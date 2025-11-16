@@ -30,6 +30,103 @@ export type EvalAgentResult = {
   followupSuggestions: string[];
 };
 
+function processToolCall(
+  content: {
+    type: "tool-call";
+    toolCallId?: string;
+    toolName: string;
+    input: unknown;
+  },
+  parts: ChatMessage["parts"],
+  toolResults: Array<{ toolName: string; type: string; state?: string }>
+): void {
+  const toolCallId = content.toolCallId || generateUUID();
+  const toolPartType = `tool-${content.toolName}` as const;
+  parts.push({
+    type: toolPartType,
+    toolCallId,
+    state: "input-available",
+    input: content.input,
+  } as ChatMessage["parts"][number]);
+  toolResults.push({
+    toolName: content.toolName,
+    type: toolPartType,
+    state: "input-available",
+  });
+}
+
+function processToolResult(
+  content: {
+    type: "tool-result";
+    toolCallId: string;
+    toolName: string;
+    output: unknown;
+  },
+  parts: ChatMessage["parts"],
+  toolResults: Array<{ toolName: string; type: string; state?: string }>
+): void {
+  const toolCallId = content.toolCallId;
+  const partIndex = parts.findIndex(
+    (p) =>
+      p.type.startsWith("tool-") &&
+      "toolCallId" in p &&
+      p.toolCallId === toolCallId
+  );
+
+  if (partIndex >= 0) {
+    const part = parts[partIndex];
+    if (part.type.startsWith("tool-") && "state" in part) {
+      parts[partIndex] = {
+        ...part,
+        state: "output-available",
+        output: content.output,
+      } as ChatMessage["parts"][number];
+    }
+  } else {
+    // Tool result without a prior call (shouldn't happen, but handle it)
+    const toolPartType = `tool-${content.toolName}` as const;
+    parts.push({
+      type: toolPartType,
+      toolCallId: toolCallId || generateUUID(),
+      state: "output-available",
+      output: content.output,
+    } as ChatMessage["parts"][number]);
+  }
+
+  const existingIndex = toolResults.findIndex(
+    (tr) => tr.toolName === content.toolName
+  );
+  if (existingIndex >= 0) {
+    toolResults[existingIndex] = {
+      ...toolResults[existingIndex],
+      state: "output-available",
+    };
+  } else {
+    toolResults.push({
+      toolName: content.toolName,
+      type: `tool-${content.toolName}`,
+      state: "output-available",
+    });
+  }
+}
+
+async function extractFollowupSuggestions(
+  followupSuggestionsResult: Awaited<
+    ReturnType<typeof generateFollowupSuggestions>
+  >
+): Promise<string[]> {
+  const suggestions: string[] = [];
+  for await (const chunk of followupSuggestionsResult.partialObjectStream) {
+    if (chunk.suggestions) {
+      suggestions.push(
+        ...chunk.suggestions.filter((s): s is string => s !== undefined)
+      );
+    }
+  }
+
+  return suggestions.length > 0 ? suggestions.slice(-5) : [];
+}
+
 export async function runCoreChatAgentEval({
   userMessage,
   previousMessages = [],
@@ -97,63 +194,9 @@ export async function runCoreChatAgentEval({
   for (const step of steps) {
     for (const content of step.content) {
       if (content.type === "tool-call") {
-        const toolCallId = content.toolCallId || generateUUID();
-        const toolPartType = `tool-${content.toolName}` as const;
-        parts.push({
-          type: toolPartType,
-          toolCallId,
-          state: "input-available",
-          input: content.input,
-        } as ChatMessage["parts"][number]);
-        toolResults.push({
-          toolName: content.toolName,
-          type: toolPartType,
-          state: "input-available",
-        });
+        processToolCall(content, parts, toolResults);
       } else if (content.type === "tool-result") {
-        // Find the corresponding tool call part and update it
-        const toolCallId = content.toolCallId;
-        const partIndex = parts.findIndex(
-          (p) =>
-            p.type.startsWith("tool-") &&
-            "toolCallId" in p &&
-            p.toolCallId === toolCallId
-        );
-        if (partIndex >= 0) {
-          const part = parts[partIndex];
-          if (part.type.startsWith("tool-") && "state" in part) {
-            parts[partIndex] = {
-              ...part,
-              state: "output-available",
-              output: content.output,
-            } as ChatMessage["parts"][number];
-          }
-        } else {
-          // Tool result without a prior call (shouldn't happen, but handle it)
-          const toolPartType = `tool-${content.toolName}` as const;
-          parts.push({
-            type: toolPartType,
-            toolCallId: toolCallId || generateUUID(),
-            state: "output-available",
-            output: content.output,
-          } as ChatMessage["parts"][number]);
-        }
-
-        const existingIndex = toolResults.findIndex(
-          (tr) => tr.toolName === content.toolName
-        );
-        if (existingIndex >= 0) {
-          toolResults[existingIndex] = {
-            ...toolResults[existingIndex],
-            state: "output-available",
-          };
-        } else {
-          toolResults.push({
-            toolName: content.toolName,
-            type: `tool-${content.toolName}`,
-            state: "output-available",
-          });
-        }
+        processToolResult(content, parts, toolResults);
       }
     }
   }
@@ -171,27 +214,15 @@ export async function runCoreChatAgentEval({
     },
   };
 
-  // Generate followup suggestions
+  // Generate and extract followup suggestions
   const followupSuggestionsResult = generateFollowupSuggestions([
     ...contextForLLM,
     ...response.messages,
   ]);
 
-  // Consume the followup suggestions stream
-  const suggestions: string[] = [];
-  for await (const chunk of followupSuggestionsResult.partialObjectStream) {
-    if (chunk.suggestions) {
-      suggestions.push(
-        ...chunk.suggestions.filter((s): s is string => s !== undefined)
-      );
-    }
-  }
-
-  // Get final suggestions (last chunk should have all)
-  const finalSuggestions =
-    suggestions.length > 0
-      ? suggestions.slice(-5) // Take last 5 (max)
-      : [];
+  const finalSuggestions = await extractFollowupSuggestions(
+    followupSuggestionsResult
+  );
 
   // Get usage from result (it's on the result object, not response)
   const usage = await result.usage;

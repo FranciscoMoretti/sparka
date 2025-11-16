@@ -70,6 +70,82 @@ function useResearchUpdates(
     );
 }
 
+// Render deep research tool
+function renderDeepResearchPart({
+  part,
+  researchUpdates,
+  messageId,
+  isReadonly,
+  chatStore,
+}: {
+  part: Extract<ChatMessage["parts"][number], { type: "tool-deepResearch" }>;
+  researchUpdates: ChatMessage["parts"][number]["data"];
+  messageId: string;
+  isReadonly: boolean;
+  chatStore: ReturnType<typeof useChatStoreApi>;
+}) {
+  const { toolCallId, state } = part;
+
+  if (state === "input-available") {
+    return (
+      <div className="flex w-full flex-col gap-3" key={toolCallId}>
+        <ResearchUpdates updates={researchUpdates} />
+      </div>
+    );
+  }
+  if (state === "output-available") {
+    const { output, input } = part;
+    const shouldShowFullPreview = isLastArtifact(
+      chatStore.getState().messages,
+      toolCallId
+    );
+
+    if (output.format === "report") {
+      return (
+        <div key={toolCallId}>
+          <div className="mb-2">
+            <ResearchUpdates updates={researchUpdates} />
+          </div>
+          {shouldShowFullPreview ? (
+            <DocumentPreview
+              args={input}
+              isReadonly={isReadonly}
+              messageId={messageId}
+              result={output}
+              type="create"
+            />
+          ) : (
+            <DocumentToolResult
+              isReadonly={isReadonly}
+              messageId={messageId}
+              result={output}
+              type="create"
+            />
+          )}
+        </div>
+      );
+    }
+  }
+  return null;
+}
+
+// Render web search tool
+function renderWebSearchPart(
+  part: Extract<ChatMessage["parts"][number], { type: "tool-webSearch" }>,
+  researchUpdates: ChatMessage["parts"][number]["data"]
+) {
+  const { toolCallId, state } = part;
+
+  if (state === "input-available" || state === "output-available") {
+    return (
+      <div className="flex flex-col gap-3" key={toolCallId}>
+        <ResearchUpdates updates={researchUpdates} />
+      </div>
+    );
+  }
+  return null;
+}
+
 // Render a single part by index with minimal subscriptions
 function PureMessagePart({
   messageId,
@@ -85,124 +161,57 @@ function PureMessagePart({
   const researchUpdates = useResearchUpdates(messageId, partIdx, type);
   const chatStore = useChatStoreApi();
 
-  if (part.type === "tool-getWeather") {
-    return <Weather key={part.toolCallId} tool={part} />;
-  }
-
-  if (part.type === "tool-createDocument") {
-    return (
-      <CreateDocumentMessage
-        isReadonly={isReadonly}
-        key={part.toolCallId}
-        messageId={messageId}
-        tool={part}
-      />
-    );
-  }
-
-  if (part.type === "tool-updateDocument") {
-    return (
-      <UpdateDocumentMessage
-        isReadonly={isReadonly}
-        key={part.toolCallId}
-        messageId={messageId}
-        tool={part}
-      />
-    );
-  }
-
-  if (part.type === "tool-requestSuggestions") {
-    return (
-      <RequestSuggestionsMessage
-        isReadonly={isReadonly}
-        key={part.toolCallId}
-        messageId={messageId}
-        tool={part}
-      />
-    );
-  }
-
-  if (part.type === "tool-retrieve") {
-    return <Retrieve key={part.toolCallId} tool={part} />;
-  }
-
-  if (part.type === "tool-readDocument") {
-    return <ReadDocument key={part.toolCallId} tool={part} />;
-  }
-
-  if (part.type === "tool-codeInterpreter") {
-    return <CodeInterpreterMessage key={part.toolCallId} tool={part} />;
-  }
-
-  if (part.type === "tool-generateImage") {
-    return <GeneratedImage key={part.toolCallId} tool={part} />;
-  }
-
-  if (type === "tool-deepResearch") {
-    const { toolCallId, state } = part;
-
-    if (state === "input-available") {
+  switch (type) {
+    case "tool-getWeather":
+      return <Weather key={part.toolCallId} tool={part} />;
+    case "tool-createDocument":
       return (
-        <div className="flex w-full flex-col gap-3" key={toolCallId}>
-          <ResearchUpdates updates={researchUpdates} />
-        </div>
+        <CreateDocumentMessage
+          isReadonly={isReadonly}
+          key={part.toolCallId}
+          messageId={messageId}
+          tool={part}
+        />
       );
-    }
-    if (state === "output-available") {
-      const { output, input } = part;
-      const shouldShowFullPreview = isLastArtifact(
-        chatStore.getState().messages,
-        toolCallId
-      );
-
-      if (output.format === "report") {
-        return (
-          <div key={toolCallId}>
-            <div className="mb-2">
-              <ResearchUpdates updates={researchUpdates} />
-            </div>
-            {shouldShowFullPreview ? (
-              <DocumentPreview
-                args={input}
-                isReadonly={isReadonly}
-                messageId={messageId}
-                result={output}
-                type="create"
-              />
-            ) : (
-              <DocumentToolResult
-                isReadonly={isReadonly}
-                messageId={messageId}
-                result={output}
-                type="create"
-              />
-            )}
-          </div>
-        );
-      }
-    }
-  }
-
-  if (type === "tool-webSearch") {
-    const { toolCallId, state } = part;
-
-    if (state === "input-available") {
+    case "tool-updateDocument":
       return (
-        <div className="flex flex-col gap-3" key={toolCallId}>
-          <ResearchUpdates updates={researchUpdates} />
-        </div>
+        <UpdateDocumentMessage
+          isReadonly={isReadonly}
+          key={part.toolCallId}
+          messageId={messageId}
+          tool={part}
+        />
       );
-    }
-    if (state === "output-available") {
+    case "tool-requestSuggestions":
       return (
-        <div className="flex flex-col gap-3" key={toolCallId}>
-          <ResearchUpdates updates={researchUpdates} />
-        </div>
+        <RequestSuggestionsMessage
+          isReadonly={isReadonly}
+          key={part.toolCallId}
+          messageId={messageId}
+          tool={part}
+        />
       );
-    }
+    case "tool-retrieve":
+      return <Retrieve key={part.toolCallId} tool={part} />;
+    case "tool-readDocument":
+      return <ReadDocument key={part.toolCallId} tool={part} />;
+    case "tool-codeInterpreter":
+      return <CodeInterpreterMessage key={part.toolCallId} tool={part} />;
+    case "tool-generateImage":
+      return <GeneratedImage key={part.toolCallId} tool={part} />;
+    case "tool-deepResearch":
+      return renderDeepResearchPart({
+        part,
+        researchUpdates,
+        messageId,
+        isReadonly,
+        chatStore,
+      });
+    case "tool-webSearch":
+      return renderWebSearchPart(part, researchUpdates);
+    default:
+      return null;
   }
-
-  return null;
 }
 
 const MessagePart = memo(PureMessagePart);

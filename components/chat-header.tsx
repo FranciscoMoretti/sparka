@@ -20,6 +20,52 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 const DISABLED_PROJECT_ID = "00000000-0000-0000-0000-000000000000";
 
+function getChatLabel(params: {
+  privateChat: { title?: string } | undefined;
+  publicChat: { title?: string } | undefined;
+  isPrivateChatLoading: boolean;
+  isPublicChatLoading: boolean;
+  hasMessages: boolean;
+}): string {
+  const {
+    privateChat,
+    publicChat,
+    isPrivateChatLoading,
+    isPublicChatLoading,
+    hasMessages,
+  } = params;
+
+  if (privateChat?.title) {
+    return privateChat.title;
+  }
+  if (publicChat?.title) {
+    return publicChat.title;
+  }
+  if (isPrivateChatLoading || isPublicChatLoading) {
+    return "Loading chat…";
+  }
+  if (hasMessages) {
+    return "Untitled chat";
+  }
+  return "New chat";
+}
+
+function getProjectLabel(
+  resolvedProjectId: string | null,
+  project: { name?: string } | undefined,
+  isProjectLoading: boolean
+): string | undefined {
+  if (!resolvedProjectId) {
+    return;
+  }
+  if (project?.name) {
+    return project.name;
+  }
+  if (isProjectLoading) {
+    return "Loading project…";
+  }
+}
+
 function PureChatHeader({
   chatId,
   isReadonly,
@@ -67,18 +113,19 @@ function PureChatHeader({
     enabled: isAuthenticated && !!resolvedProjectId,
   });
 
-  const chatLabel =
-    privateChat?.title ??
-    publicChat?.title ??
-    (isPrivateChatLoading || isPublicChatLoading
-      ? "Loading chat…"
-      : hasMessages
-        ? "Untitled chat"
-        : "New chat");
+  const chatLabel = getChatLabel({
+    privateChat,
+    publicChat,
+    isPrivateChatLoading,
+    isPublicChatLoading,
+    hasMessages,
+  });
 
-  const projectLabel = resolvedProjectId
-    ? (project?.name ?? (isProjectLoading ? "Loading project…" : undefined))
-    : undefined;
+  const projectLabel = getProjectLabel(
+    resolvedProjectId,
+    project,
+    isProjectLoading
+  );
 
   const projectHref = resolvedProjectId
     ? `/project/${resolvedProjectId}`

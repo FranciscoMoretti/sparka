@@ -106,17 +106,24 @@ class DiffTextNode extends TextNode {
   }
 }
 
+// Helper function to determine diff type from change object
+function getDiffType(change: any): DiffTypeValue {
+  if (change.added) {
+    return DiffType.Inserted;
+  }
+  if (change.removed) {
+    return DiffType.Deleted;
+  }
+  return DiffType.Unchanged;
+}
+
 // Proper diff computation using the diff library
 function computeProperDiff(oldText: string, newText: string) {
   const changes = diffWords(oldText, newText);
 
   return changes.map((change) => ({
     text: change.value,
-    type: change.added
-      ? DiffType.Inserted
-      : change.removed
-        ? DiffType.Deleted
-        : DiffType.Unchanged,
+    type: getDiffType(change),
   }));
 }
 

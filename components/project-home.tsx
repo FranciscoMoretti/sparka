@@ -106,9 +106,8 @@ export function ProjectHome({
   return (
     <div className="flex flex-1 items-center justify-center">
       <div className="mx-auto w-full p-2 @[400px]:px-4 @[400px]:pb-4 md:max-w-3xl @[400px]:md:pb-6">
-        {isLoadingProject ? (
-          <Skeleton className="mb-3 h-8 w-48" />
-        ) : project?.name ? (
+        {isLoadingProject && <Skeleton className="mb-3 h-8 w-48" />}
+        {!isLoadingProject && project?.name && (
           <div className="mb-3 flex items-center gap-2">
             <h1 className="font-bold text-2xl">{project.name}</h1>
             <Button
@@ -122,7 +121,7 @@ export function ProjectHome({
               <span className="sr-only">Rename project</span>
             </Button>
           </div>
-        ) : null}
+        )}
 
         <MultimodalInput
           chatId={chatId}
@@ -132,7 +131,7 @@ export function ProjectHome({
         />
 
         <div className="mt-4">
-          {isLoadingProject ? (
+          {isLoadingProject && (
             <Card>
               <CardHeader>
                 <Skeleton className="h-5 w-32" />
@@ -142,7 +141,8 @@ export function ProjectHome({
                 <Skeleton className="h-10 w-40" />
               </CardContent>
             </Card>
-          ) : project?.instructions?.trim() ? (
+          )}
+          {!isLoadingProject && project?.instructions?.trim() && (
             <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -165,7 +165,8 @@ export function ProjectHome({
                 </div>
               </CardContent>
             </Card>
-          ) : (
+          )}
+          {!(isLoadingProject || project?.instructions?.trim()) && (
             <Card>
               <CardHeader>
                 <CardTitle>Instructions</CardTitle>
@@ -187,7 +188,7 @@ export function ProjectHome({
         </div>
 
         <div className="mt-4 space-y-2">
-          {isLoadingChats ? (
+          {isLoadingChats &&
             [1, 2, 3].map((i) => (
               <div
                 className="rounded-xl border border-border/60 bg-muted/10 px-4 py-3"
@@ -196,8 +197,9 @@ export function ProjectHome({
                 <Skeleton className="h-4 w-48" />
                 <Skeleton className="mt-2 h-3 w-24" />
               </div>
-            ))
-          ) : projectChats.length > 0 ? (
+            ))}
+          {!isLoadingChats &&
+            projectChats.length > 0 &&
             projectChats.map((chat) => (
               <ProjectChatItem
                 chat={chat}
@@ -211,8 +213,8 @@ export function ProjectHome({
                   toast.success("Chat renamed successfully");
                 }}
               />
-            ))
-          ) : (
+            ))}
+          {!isLoadingChats && projectChats.length === 0 && (
             <div className="rounded-xl border border-border/60 px-4 py-6">
               <p className="font-medium text-foreground text-sm">
                 No chats in this project

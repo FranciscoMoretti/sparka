@@ -20,6 +20,56 @@ export interface MarkdownMemoAugmentedState<UI_MESSAGE extends UIMessage>
   ) => string | null;
 }
 
+const getSelectedPart = <UI_MESSAGE extends UIMessage>(
+  get: () => BaseChatStoreState<UI_MESSAGE>,
+  messageId: string,
+  partIdx: number,
+  useFallback = false
+): string => {
+  const list = useFallback
+    ? get()._throttledMessages || get().messages
+    : get()._throttledMessages;
+
+  if (!list) {
+    throw new Error("No messages available");
+  }
+
+  const message = list.find((msg) => msg.id === messageId);
+  if (!message) {
+    throw new Error(`Message not found for id: ${messageId}`);
+  }
+
+  const selected = message.parts[partIdx];
+  if (!selected) {
+    throw new Error(
+      `Part not found for id: ${messageId} at partIdx: ${partIdx}`
+    );
+  }
+
+  if (selected.type !== "text") {
+    throw new Error(
+      `Part type mismatch for id: ${messageId} at partIdx: ${partIdx}. Expected text, got ${String(
+        selected.type
+      )}`
+    );
+  }
+
+  return selected.text || "";
+};
+
+const getCachedMarkdown = (
+  cache: Map<string, MarkdownCacheEntry>,
+  messageId: string,
+  partIdx: number,
+  text: string
+): MarkdownCacheEntry | null =>
+  getMarkdownFromCache({
+    cache,
+    messageId,
+    partIdx,
+    text,
+  });
+
 export const withMarkdownMemo =
   <UI_MESSAGE extends UIMessage>(initialMessages: UI_MESSAGE[] = []) =>
   <T extends BaseChatStoreState<UI_MESSAGE>>(
@@ -48,62 +98,23 @@ export const withMarkdownMemo =
       ...base,
       _markdownCache: initialPrecompute.cache,
       getMarkdownBlocksForPart: (messageId: string, partIdx: number) => {
-        const list = get()._throttledMessages;
-        if (!list) {
-          throw new Error("No messages available");
-        }
-        const message = list.find((msg) => msg.id === messageId);
-        if (!message) {
-          throw new Error(`Message not found for id: ${messageId}`);
-        }
-        const selected = message.parts[partIdx];
-        if (!selected) {
-          throw new Error(
-            `Part not found for id: ${messageId} at partIdx: ${partIdx}`
-          );
-        }
-        if (selected.type !== "text") {
-          throw new Error(
-            `Part type mismatch for id: ${messageId} at partIdx: ${partIdx}. Expected text, got ${String(
-              selected.type
-            )}`
-          );
-        }
-        const text = selected.text || "";
-        const cached = getMarkdownFromCache({
-          cache: get()._markdownCache,
+        const text = getSelectedPart(get, messageId, partIdx, false);
+        const cached = getCachedMarkdown(
+          get()._markdownCache,
           messageId,
           partIdx,
-          text,
-        });
+          text
+        );
         return cached ? cached.blocks : [];
       },
       getMarkdownBlockCountForPart: (messageId: string, partIdx: number) => {
-        const list = get()._throttledMessages || get().messages;
-        const message = list.find((msg) => msg.id === messageId);
-        if (!message) {
-          throw new Error(`Message not found for id: ${messageId}`);
-        }
-        const selected = message.parts[partIdx];
-        if (!selected) {
-          throw new Error(
-            `Part not found for id: ${messageId} at partIdx: ${partIdx}`
-          );
-        }
-        if (selected.type !== "text") {
-          throw new Error(
-            `Part type mismatch for id: ${messageId} at partIdx: ${partIdx}. Expected text, got ${String(
-              selected.type
-            )}`
-          );
-        }
-        const text = selected.text || "";
-        const cached = getMarkdownFromCache({
-          cache: get()._markdownCache,
+        const text = getSelectedPart(get, messageId, partIdx, true);
+        const cached = getCachedMarkdown(
+          get()._markdownCache,
           messageId,
           partIdx,
-          text,
-        });
+          text
+        );
         const PREALLOCATED_BLOCKS = 100;
         if (cached) {
           return Math.max(
@@ -119,34 +130,13 @@ export const withMarkdownMemo =
         partIdx: number,
         blockIdx: number
       ) => {
-        const list = get()._throttledMessages;
-        if (!list) {
-          throw new Error("No messages available");
-        }
-        const message = list.find((msg) => msg.id === messageId);
-        if (!message) {
-          throw new Error(`Message not found for id: ${messageId}`);
-        }
-        const selected = message.parts[partIdx];
-        if (!selected) {
-          throw new Error(
-            `Part not found for id: ${messageId} at partIdx: ${partIdx}`
-          );
-        }
-        if (selected.type !== "text") {
-          throw new Error(
-            `Part type mismatch for id: ${messageId} at partIdx: ${partIdx}. Expected text, got ${String(
-              selected.type
-            )}`
-          );
-        }
-        const text = selected.text || "";
-        const cached = getMarkdownFromCache({
-          cache: get()._markdownCache,
+        const text = getSelectedPart(get, messageId, partIdx, false);
+        const cached = getCachedMarkdown(
+          get()._markdownCache,
           messageId,
           partIdx,
-          text,
-        });
+          text
+        );
         const blocks = cached ? cached.blocks : [];
         if (blockIdx < 0 || blockIdx >= blocks.length) {
           return null;

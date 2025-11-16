@@ -124,6 +124,47 @@ function PureMultimodalInput({
     return defaultImageModelDef;
   }, [handleModelChange]);
 
+  // Helper function to update URL for new chats
+  const updateUrlForNewChat = useCallback(() => {
+    const currentPath = window.location.pathname;
+    if (currentPath === "/") {
+      window.history.pushState({}, "", `/chat/${chatId}`);
+    } else {
+      // Handle project routes: /project/:projectId -> /project/:projectId/chat/:chatId
+      const projectMatch = currentPath.match(PROJECT_ROUTE_REGEX);
+      if (projectMatch) {
+        const [, projectId] = projectMatch;
+        window.history.pushState(
+          {},
+          "",
+          `/project/${projectId}/chat/${chatId}`
+        );
+      }
+    }
+  }, [chatId]);
+
+  // Helper function to handle edit mode message trimming
+  const trimMessagesForEditMode = useCallback(() => {
+    if (parentMessageId === null) {
+      // If no parent, clear all messages
+      setMessages([]);
+    } else {
+      // Find the parent message and trim to that point
+      const parentIndex = storeApi
+        .getState()
+        .getThrottledMessages()
+        .findIndex((msg: ChatMessage) => msg.id === parentMessageId);
+      if (parentIndex !== -1) {
+        // Keep messages up to and including the parent
+        const messagesUpToParent = storeApi
+          .getState()
+          .getThrottledMessages()
+          .slice(0, parentIndex + 1);
+        setMessages(messagesUpToParent);
+      }
+    }
+  }, [parentMessageId, setMessages, storeApi]);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadQueue, setUploadQueue] = useState<string[]>([]);
   const [imageModal, setImageModal] = useState<{
@@ -211,64 +252,34 @@ function PureMultimodalInput({
       return;
     }
 
-    // For new chats, we need to update the url to include the chatId
-    const currentPath = window.location.pathname;
-    if (currentPath === "/") {
-      window.history.pushState({}, "", `/chat/${chatId}`);
-    } else {
-      // Handle project routes: /project/:projectId -> /project/:projectId/chat/:chatId
-      const projectMatch = currentPath.match(PROJECT_ROUTE_REGEX);
-      if (projectMatch) {
-        const [, projectId] = projectMatch;
-        window.history.pushState(
-          {},
-          "",
-          `/project/${projectId}/chat/${chatId}`
-        );
-      }
-    }
+    // Update URL for new chats
+    updateUrlForNewChat();
 
     // Get the appropriate parent message ID
     const effectiveParentMessageId = isEditMode
       ? parentMessageId
       : storeApi.getState().getLastMessageId();
 
-    // In edit mode, trim messages to the parent message
+    // Handle edit mode message trimming
     if (isEditMode) {
-      if (parentMessageId === null) {
-        // If no parent, clear all messages
-        setMessages([]);
-      } else {
-        // Find the parent message and trim to that point
-        const parentIndex = storeApi
-          .getState()
-          .getThrottledMessages()
-          .findIndex((msg: ChatMessage) => msg.id === parentMessageId);
-        if (parentIndex !== -1) {
-          // Keep messages up to and including the parent
-          const messagesUpToParent = storeApi
-            .getState()
-            .getThrottledMessages()
-            .slice(0, parentIndex + 1);
-          setMessages(messagesUpToParent);
-        }
-      }
+      trimMessagesForEditMode();
     }
+
+    // Build the message with attachments and text
+    const messageParts = attachments.map((attachment) => ({
+      type: "file" as const,
+      url: attachment.url,
+      name: attachment.name,
+      mediaType: attachment.contentType,
+    }));
+    messageParts.push({
+      type: "text" as const,
+      text: input,
+    });
 
     const message: ChatMessage = {
       id: generateUUID(),
-      parts: [
-        ...attachments.map((attachment) => ({
-          type: "file" as const,
-          url: attachment.url,
-          name: attachment.name,
-          mediaType: attachment.contentType,
-        })),
-        {
-          type: "text",
-          text: input,
-        },
-      ],
+      parts: messageParts,
       metadata: {
         createdAt: new Date(),
         parentMessageId: effectiveParentMessageId,
@@ -279,9 +290,7 @@ function PureMultimodalInput({
     };
 
     onSendMessage?.(message);
-
     saveChatMessage({ message, chatId });
-
     sendMessage(message);
 
     // Refocus after submit
@@ -298,10 +307,11 @@ function PureMultimodalInput({
     saveChatMessage,
     parentMessageId,
     selectedModelId,
-    setMessages,
     editorRef,
     onSendMessage,
     storeApi,
+    updateUrlForNewChat,
+    trimMessagesForEditMode,
   ]);
 
   const submitForm = useCallback(() => {
@@ -503,21 +513,30 @@ function PureMultimodalInput({
     },
   });
 
+  const shouldShowEmptyState =
+    messageIds.length === 0 &&
+    attachments.length === 0 &&
+    uploadQueue.length === 0 &&
+    !isEditMode;
+
+  let emptyStateContent: React.ReactNode = null;
+  if (shouldShowEmptyState) {
+    if (emptyStateOverride) {
+      emptyStateContent = emptyStateOverride;
+    } else if (!disableSuggestedActions) {
+      emptyStateContent = (
+        <SuggestedActions
+          chatId={chatId}
+          className="mb-4"
+          selectedModelId={selectedModelId}
+        />
+      );
+    }
+  }
+
   return (
     <div className="relative">
-      {messageIds.length === 0 &&
-        attachments.length === 0 &&
-        uploadQueue.length === 0 &&
-        !isEditMode &&
-        (emptyStateOverride ? (
-          emptyStateOverride
-        ) : disableSuggestedActions ? null : (
-          <SuggestedActions
-            chatId={chatId}
-            className="mb-4"
-            selectedModelId={selectedModelId}
-          />
-        ))}
+      {emptyStateContent}
 
       <input
         accept="image/*,.pdf"

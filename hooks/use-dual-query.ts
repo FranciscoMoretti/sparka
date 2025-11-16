@@ -125,12 +125,9 @@ export function useDualQuery<
   TData = TQueryFnData,
   TQueryKey extends QueryKey = QueryKey,
 >(
-  options: UseDualUndefinedInitialDataOptions<
-    TQueryFnData,
-    TError,
-    TData,
-    TQueryKey
-  >,
+  options:
+    | UseDualUndefinedInitialDataOptions<TQueryFnData, TError, TData, TQueryKey>
+    | UseDualQueryOptions<TQueryFnData, TError, TData, TQueryKey>,
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError>;
 export function useDualQuery<
@@ -139,16 +136,10 @@ export function useDualQuery<
   TData = TQueryFnData,
   TQueryKey extends QueryKey = QueryKey,
 >(
-  options: UseDualQueryOptions<TQueryFnData, TError, TData, TQueryKey>,
-  queryClient?: QueryClient
-): UseQueryResult<TData, TError>;
-export function useDualQuery<
-  TQueryFnData = unknown,
-  TError = DefaultError,
-  TData = TQueryFnData,
-  TQueryKey extends QueryKey = QueryKey,
->(
-  options: UseDualQueryOptions<TQueryFnData, TError, TData, TQueryKey>,
+  options:
+    | UseDualDefinedInitialDataOptions<TQueryFnData, TError, TData, TQueryKey>
+    | UseDualUndefinedInitialDataOptions<TQueryFnData, TError, TData, TQueryKey>
+    | UseDualQueryOptions<TQueryFnData, TError, TData, TQueryKey>,
   queryClient?: QueryClient
 ): UseQueryResult<TData, TError> {
   const merged = useDualQueryOptions<TQueryFnData, TError, TData, TQueryKey>(

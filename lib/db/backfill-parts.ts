@@ -10,6 +10,82 @@ config({
   path: ".env.local",
 });
 
+async function processMessage(
+  db: ReturnType<typeof drizzle>,
+  msg: unknown,
+  messagesToBackfillLength: number,
+  state: { processed: number; successCount: number; errorCount: number }
+) {
+  try {
+    // Parse parts from JSON (parts column may still exist in DB for old data)
+    const parts = (msg as { parts?: unknown; id: unknown }).parts as
+      | ChatMessage["parts"]
+      | null
+      | undefined;
+
+    if (!Array.isArray(parts) || parts.length === 0) {
+      // Skip messages with no parts
+      state.processed += 1;
+      return;
+    }
+
+    // Convert to DB parts
+    const dbParts = mapUIMessagePartsToDBParts(
+      parts,
+      (msg as { id: unknown }).id as string
+    );
+
+    if (dbParts.length > 0) {
+      // Insert parts in a transaction
+      await db.transaction(async (tx) => {
+        await tx.insert(part).values(dbParts);
+      });
+
+      state.successCount += 1;
+    }
+
+    state.processed += 1;
+
+    // Show progress every 10 messages
+    if (state.processed % 10 === 0) {
+      console.log(
+        `  ✓ Processed ${state.processed}/${messagesToBackfillLength} messages (${state.successCount} successful, ${state.errorCount} errors)`
+      );
+    }
+  } catch (error) {
+    state.errorCount += 1;
+    console.error(
+      `  ✗ Error processing message ${(msg as { id: unknown }).id}:`,
+      error instanceof Error ? error.message : String(error)
+    );
+    state.processed += 1;
+  }
+}
+
+async function processBatches(
+  db: ReturnType<typeof drizzle>,
+  messagesToBackfill: unknown[],
+  batchSize: number
+) {
+  const state = { processed: 0, successCount: 0, errorCount: 0 };
+
+  for (let i = 0; i < messagesToBackfill.length; i += batchSize) {
+    const batch = messagesToBackfill.slice(i, i + batchSize);
+    const batchNumber = Math.floor(i / batchSize) + 1;
+    const totalBatches = Math.ceil(messagesToBackfill.length / batchSize);
+
+    console.log(
+      `\n📦 Processing batch ${batchNumber}/${totalBatches} (${batch.length} messages)...`
+    );
+
+    for (const msg of batch) {
+      await processMessage(db, msg, messagesToBackfill.length, state);
+    }
+  }
+
+  return state;
+}
+
 const runBackfill = async () => {
   if (!process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is not defined");
@@ -57,63 +133,11 @@ const runBackfill = async () => {
 
     // Process messages in batches to avoid memory issues
     const batchSize = 100;
-    let processed = 0;
-    let successCount = 0;
-    let errorCount = 0;
-
-    for (let i = 0; i < messagesToBackfill.length; i += batchSize) {
-      const batch = messagesToBackfill.slice(i, i + batchSize);
-      const batchNumber = Math.floor(i / batchSize) + 1;
-      const totalBatches = Math.ceil(messagesToBackfill.length / batchSize);
-
-      console.log(
-        `\n📦 Processing batch ${batchNumber}/${totalBatches} (${batch.length} messages)...`
-      );
-
-      for (const msg of batch) {
-        try {
-          // Parse parts from JSON (parts column may still exist in DB for old data)
-          const parts = (msg as { parts?: unknown }).parts as
-            | ChatMessage["parts"]
-            | null
-            | undefined;
-
-          if (!Array.isArray(parts) || parts.length === 0) {
-            // Skip messages with no parts
-            processed += 1;
-            continue;
-          }
-
-          // Convert to DB parts
-          const dbParts = mapUIMessagePartsToDBParts(parts, msg.id);
-
-          if (dbParts.length > 0) {
-            // Insert parts in a transaction
-            await db.transaction(async (tx) => {
-              await tx.insert(part).values(dbParts);
-            });
-
-            successCount += 1;
-          }
-
-          processed += 1;
-
-          // Show progress every 10 messages
-          if (processed % 10 === 0) {
-            console.log(
-              `  ✓ Processed ${processed}/${messagesToBackfill.length} messages (${successCount} successful, ${errorCount} errors)`
-            );
-          }
-        } catch (error) {
-          errorCount += 1;
-          console.error(
-            `  ✗ Error processing message ${msg.id}:`,
-            error instanceof Error ? error.message : String(error)
-          );
-          processed += 1;
-        }
-      }
-    }
+    const { processed, successCount, errorCount } = await processBatches(
+      db,
+      messagesToBackfill,
+      batchSize
+    );
 
     const end = Date.now();
     const duration = ((end - start) / 1000).toFixed(2);

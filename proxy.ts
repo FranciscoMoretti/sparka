@@ -2,65 +2,77 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-export async function proxy(req: NextRequest) {
-  // Mirror previous authorized() logic using Better Auth session
-  const url = req.nextUrl;
-  const isApiAuthRoute = url.pathname.startsWith("/api/auth");
-  if (isApiAuthRoute) {
-    return;
-  }
-
+function shouldSkipRequest(pathname: string): boolean {
+  const isApiAuthRoute = pathname.startsWith("/api/auth");
   const isMetadataRoute =
-    url.pathname === "/sitemap.xml" ||
-    url.pathname === "/robots.txt" ||
-    url.pathname === "/manifest.webmanifest";
-  if (isMetadataRoute) {
-    return;
-  }
+    pathname === "/sitemap.xml" ||
+    pathname === "/robots.txt" ||
+    pathname === "/manifest.webmanifest";
+  const isTrpcApi = pathname.startsWith("/api/trpc");
+  const isChatApiRoute = pathname === "/api/chat";
 
-  const isTrpcApi = url.pathname.startsWith("/api/trpc");
-  if (isTrpcApi) {
-    return;
-  }
+  return isApiAuthRoute || isMetadataRoute || isTrpcApi || isChatApiRoute;
+}
 
-  const isChatApiRoute = url.pathname === "/api/chat";
-  if (isChatApiRoute) {
-    return;
-  }
+type PageContext = {
+  isOnChat: boolean;
+  isOnModels: boolean;
+  isOnCompare: boolean;
+  isOnLoginPage: boolean;
+  isOnRegisterPage: boolean;
+  isOnSharePage: boolean;
+  isOnPrivacyPage: boolean;
+  isOnTermsPage: boolean;
+};
 
-  const session = await auth.api.getSession({ headers: req.headers });
-  const isLoggedIn = !!session?.user;
+function getPageContext(pathname: string): PageContext {
+  return {
+    isOnChat: pathname.startsWith("/"),
+    isOnModels: pathname.startsWith("/models"),
+    isOnCompare: pathname.startsWith("/compare"),
+    isOnLoginPage: pathname.startsWith("/login"),
+    isOnRegisterPage: pathname.startsWith("/register"),
+    isOnSharePage: pathname.startsWith("/share/"),
+    isOnPrivacyPage: pathname.startsWith("/privacy"),
+    isOnTermsPage: pathname.startsWith("/terms"),
+  };
+}
 
-  const isOnChat = url.pathname.startsWith("/");
-  const isOnModels = url.pathname.startsWith("/models");
-  const isOnCompare = url.pathname.startsWith("/compare");
-  const isOnLoginPage = url.pathname.startsWith("/login");
-  const isOnRegisterPage = url.pathname.startsWith("/register");
-  const isOnSharePage = url.pathname.startsWith("/share/");
-  const isOnPrivacyPage = url.pathname.startsWith("/privacy");
-  const isOnTermsPage = url.pathname.startsWith("/terms");
+function getRedirectResponse(
+  pageContext: PageContext,
+  isLoggedIn: boolean,
+  url: URL
+): NextResponse | undefined {
+  const {
+    isOnChat,
+    isOnModels,
+    isOnCompare,
+    isOnLoginPage,
+    isOnRegisterPage,
+    isOnSharePage,
+    isOnPrivacyPage,
+    isOnTermsPage,
+  } = pageContext;
 
   if (isLoggedIn && (isOnLoginPage || isOnRegisterPage)) {
     return NextResponse.redirect(new URL("/", url));
   }
-  if (isOnRegisterPage || isOnLoginPage) {
-    return;
-  }
-  if (isOnSharePage) {
-    return;
-  }
-  if (isOnModels || isOnCompare) {
-    return;
-  }
-  if (isOnPrivacyPage || isOnTermsPage) {
+
+  const isPublicPage =
+    isOnRegisterPage ||
+    isOnLoginPage ||
+    isOnSharePage ||
+    isOnModels ||
+    isOnCompare ||
+    isOnPrivacyPage ||
+    isOnTermsPage;
+
+  if (isPublicPage) {
     return;
   }
 
   if (isOnChat) {
-    if (url.pathname === "/") {
-      return;
-    }
-    if (isLoggedIn) {
+    if (url.pathname === "/" || isLoggedIn) {
       return;
     }
     return NextResponse.redirect(new URL("/login", url));
@@ -69,6 +81,21 @@ export async function proxy(req: NextRequest) {
   if (isLoggedIn) {
     return NextResponse.redirect(new URL("/", url));
   }
+}
+
+export async function proxy(req: NextRequest) {
+  // Mirror previous authorized() logic using Better Auth session
+  const url = req.nextUrl;
+
+  if (shouldSkipRequest(url.pathname)) {
+    return;
+  }
+
+  const session = await auth.api.getSession({ headers: req.headers });
+  const isLoggedIn = !!session?.user;
+
+  const pageContext = getPageContext(url.pathname);
+  return getRedirectResponse(pageContext, isLoggedIn, url);
 }
 
 export const config = {

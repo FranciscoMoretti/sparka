@@ -43,11 +43,14 @@ export const ResearchProgress = ({
   );
 
   // TODO: First update is not showing
-  const lastUpdateTitle = lastUpdate
-    ? isComplete
-      ? "Research Complete"
-      : lastUpdate.title || updateName[lastUpdate.type]
-    : "Researching";
+  let lastUpdateTitle: string;
+  if (isComplete) {
+    lastUpdateTitle = "Research Complete";
+  } else if (lastUpdate) {
+    lastUpdateTitle = lastUpdate.title || updateName[lastUpdate.type];
+  } else {
+    lastUpdateTitle = "Researching";
+  }
 
   const timeSpent = React.useMemo(() => {
     if (isComplete) {

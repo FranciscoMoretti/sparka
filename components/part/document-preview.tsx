@@ -94,19 +94,20 @@ export function DocumentPreview({
     return <LoadingSkeleton artifactKind={result.kind ?? args.kind} />;
   }
 
-  const document: Document | null = previewDocument
-    ? previewDocument
-    : artifact.status === "streaming"
-      ? {
-          title: artifact.title,
-          kind: artifact.kind,
-          content: artifact.content,
-          id: artifact.documentId,
-          createdAt: new Date(),
-          userId: "noop",
-          messageId: "noop",
-        }
-      : null;
+  let document: Document | null = null;
+  if (previewDocument) {
+    document = previewDocument;
+  } else if (artifact.status === "streaming") {
+    document = {
+      title: artifact.title,
+      kind: artifact.kind,
+      content: artifact.content,
+      id: artifact.documentId,
+      createdAt: new Date(),
+      userId: "noop",
+      messageId: "noop",
+    };
+  }
 
   if (!document) {
     return <LoadingSkeleton artifactKind={artifact.kind} />;
@@ -232,6 +233,20 @@ const getActionText = (
   }
 };
 
+const getHeaderIcon = (isStreaming: boolean, type: "create" | "update") => {
+  if (isStreaming) {
+    return (
+      <div className="animate-spin">
+        <LoaderIcon />
+      </div>
+    );
+  }
+  if (type === "update") {
+    return <PencilEditIcon />;
+  }
+  return <FileIcon />;
+};
+
 const PureDocumentHeader = ({
   title,
   kind: _kind,
@@ -246,15 +261,7 @@ const PureDocumentHeader = ({
   <div className="flex flex-row items-start justify-between gap-2 rounded-t-2xl border border-b-0 p-4 sm:items-center dark:border-zinc-700 dark:bg-muted">
     <div className="flex flex-row items-start gap-3 sm:items-center">
       <div className="text-muted-foreground">
-        {isStreaming ? (
-          <div className="animate-spin">
-            <LoaderIcon />
-          </div>
-        ) : type === "update" ? (
-          <PencilEditIcon />
-        ) : (
-          <FileIcon />
-        )}
+        {getHeaderIcon(isStreaming, type)}
       </div>
       <div className="-translate-y-1 font-medium sm:translate-y-0">
         {isStreaming && type === "update"
@@ -276,6 +283,70 @@ const DocumentHeader = memo(PureDocumentHeader, (prevProps, nextProps) => {
 
   return true;
 });
+
+const getDocumentContentRenderer = (
+  document: Document,
+  commonProps: {
+    content: string;
+    isCurrentVersion: boolean;
+    currentVersionIndex: number;
+    status: string;
+    saveContent: () => void;
+    suggestions: never[];
+  },
+  artifact: any
+) => {
+  if (document.kind === "text") {
+    return (
+      <Editor
+        {...commonProps}
+        onSaveContent={() => {
+          // No-op for preview mode
+        }}
+      />
+    );
+  }
+
+  if (document.kind === "code") {
+    return (
+      <div className="relative flex w-full flex-1">
+        <div className="absolute inset-0">
+          <CodeEditor
+            {...commonProps}
+            onSaveContent={() => {
+              // No-op for preview mode
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  if (document.kind === "sheet") {
+    return (
+      <div className="relative flex size-full flex-1 p-4">
+        <div className="absolute inset-0">
+          <SpreadsheetEditor {...commonProps} />
+        </div>
+      </div>
+    );
+  }
+
+  if (document.kind === "image") {
+    return (
+      <ImageEditor
+        content={document.content ?? ""}
+        currentVersionIndex={0}
+        isCurrentVersion={true}
+        isInline={true}
+        status={artifact.status}
+        title={document.title}
+      />
+    );
+  }
+
+  return null;
+};
 
 const DocumentContent = ({ document }: { document: Document }) => {
   const { artifact } = useArtifact();
@@ -301,40 +372,7 @@ const DocumentContent = ({ document }: { document: Document }) => {
 
   return (
     <div className={containerClassName}>
-      {document.kind === "text" ? (
-        <Editor
-          {...commonProps}
-          onSaveContent={() => {
-            // No-op for preview mode
-          }}
-        />
-      ) : document.kind === "code" ? (
-        <div className="relative flex w-full flex-1">
-          <div className="absolute inset-0">
-            <CodeEditor
-              {...commonProps}
-              onSaveContent={() => {
-                // No-op for preview mode
-              }}
-            />
-          </div>
-        </div>
-      ) : document.kind === "sheet" ? (
-        <div className="relative flex size-full flex-1 p-4">
-          <div className="absolute inset-0">
-            <SpreadsheetEditor {...commonProps} />
-          </div>
-        </div>
-      ) : document.kind === "image" ? (
-        <ImageEditor
-          content={document.content ?? ""}
-          currentVersionIndex={0}
-          isCurrentVersion={true}
-          isInline={true}
-          status={artifact.status}
-          title={document.title}
-        />
-      ) : null}
+      {getDocumentContentRenderer(document, commonProps, artifact)}
     </div>
   );
 };

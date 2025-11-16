@@ -49,6 +49,74 @@ function PureArtifactActions({
     isReadonly,
   };
 
+  const getActionDisabledState = (
+    action: (typeof artifactDefinition.actions)[0]
+  ): boolean => {
+    if (isLoading || artifact.status === "streaming") {
+      return true;
+    }
+    if (action.isDisabled) {
+      return action.isDisabled(actionContext);
+    }
+    return false;
+  };
+
+  const renderActionButton = (
+    action: (typeof artifactDefinition.actions)[0]
+  ) => {
+    const isDisabled = getActionDisabledState(action);
+    const buttonClassName = cn("h-fit", {
+      "p-2": !action.label,
+      "px-2 py-1.5": action.label,
+    });
+
+    if (action.description === "View changes") {
+      return (
+        <div>
+          <Toggle
+            className={buttonClassName}
+            disabled={isDisabled}
+            onClick={async () => {
+              setIsLoading(true);
+              try {
+                await Promise.resolve(action.onClick(actionContext));
+              } catch (_error) {
+                toast.error("Failed to execute action");
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            pressed={mode === "diff"}
+          >
+            {action.icon}
+            {action.label}
+          </Toggle>
+        </div>
+      );
+    }
+
+    return (
+      <Button
+        className={cn(buttonClassName, "dark:hover:bg-zinc-700")}
+        disabled={isDisabled}
+        onClick={async () => {
+          setIsLoading(true);
+          try {
+            await Promise.resolve(action.onClick(actionContext));
+          } catch (_error) {
+            toast.error("Failed to execute action");
+          } finally {
+            setIsLoading(false);
+          }
+        }}
+        variant="outline"
+      >
+        {action.icon}
+        {action.label}
+      </Button>
+    );
+  };
+
   return (
     <div className="flex flex-row gap-1">
       {artifactDefinition.actions
@@ -67,67 +135,7 @@ function PureArtifactActions({
         .map((action) => (
           <Tooltip key={action.description}>
             <TooltipTrigger asChild>
-              {action.description === "View changes" ? (
-                <div>
-                  <Toggle
-                    className={cn("h-fit", {
-                      "p-2": !action.label,
-                      "px-2 py-1.5": action.label,
-                    })}
-                    disabled={
-                      isLoading || artifact.status === "streaming"
-                        ? true
-                        : action.isDisabled
-                          ? action.isDisabled(actionContext)
-                          : false
-                    }
-                    onClick={async () => {
-                      setIsLoading(true);
-
-                      try {
-                        await Promise.resolve(action.onClick(actionContext));
-                      } catch (_error) {
-                        toast.error("Failed to execute action");
-                      } finally {
-                        setIsLoading(false);
-                      }
-                    }}
-                    pressed={mode === "diff"}
-                  >
-                    {action.icon}
-                    {action.label}
-                  </Toggle>
-                </div>
-              ) : (
-                <Button
-                  className={cn("h-fit dark:hover:bg-zinc-700", {
-                    "p-2": !action.label,
-                    "px-2 py-1.5": action.label,
-                  })}
-                  disabled={
-                    isLoading || artifact.status === "streaming"
-                      ? true
-                      : action.isDisabled
-                        ? action.isDisabled(actionContext)
-                        : false
-                  }
-                  onClick={async () => {
-                    setIsLoading(true);
-
-                    try {
-                      await Promise.resolve(action.onClick(actionContext));
-                    } catch (_error) {
-                      toast.error("Failed to execute action");
-                    } finally {
-                      setIsLoading(false);
-                    }
-                  }}
-                  variant="outline"
-                >
-                  {action.icon}
-                  {action.label}
-                </Button>
-              )}
+              {renderActionButton(action)}
             </TooltipTrigger>
             <TooltipContent>{action.description}</TooltipContent>
           </Tooltip>

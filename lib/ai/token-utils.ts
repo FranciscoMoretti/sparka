@@ -69,6 +69,125 @@ export function trimPrompt(prompt: string, contextSize: number) {
   return trimPrompt(trimmedPrompt, contextSize);
 }
 
+// Helper function to truncate a string message to fit available tokens
+function truncateStringMessage(
+  message: ModelMessage,
+  availableTokens: number
+): ModelMessage {
+  if (typeof message.content !== "string") {
+    return message;
+  }
+
+  return {
+    ...message,
+    content: trimPrompt(message.content, availableTokens),
+  };
+}
+
+// Helper function to truncate a tool message with array content
+function truncateToolMessage(
+  message: ModelMessage,
+  availableTokens: number
+): ModelMessage {
+  if (!Array.isArray(message.content)) {
+    return message;
+  }
+
+  const content = [...message.content];
+  const currentMessageTokens = calculateMessagesTokens([message]);
+  let tokensToRemove = currentMessageTokens - availableTokens;
+
+  // Truncate from the end of the content array
+  for (let i = content.length - 1; i >= 0 && tokensToRemove > 0; i--) {
+    const part = content[i];
+    const isToolResult =
+      part.type === "tool-result" &&
+      part.output &&
+      typeof part.output === "object" &&
+      "value" in part.output &&
+      typeof part.output.value === "string";
+
+    if (isToolResult) {
+      const partTokens = encoder.encode(part.output.value).length;
+      if (partTokens > 0) {
+        // Truncate this part's output value
+        const targetTokens = Math.max(0, partTokens - tokensToRemove);
+        content[i] = {
+          ...part,
+          output: {
+            type: "text" as const,
+            value: trimPrompt(part.output.value, targetTokens),
+          },
+        };
+        tokensToRemove -= partTokens - targetTokens;
+      } else {
+        // Remove entire part if needed
+        content.splice(i, 1);
+        tokensToRemove -= partTokens;
+      }
+    }
+  }
+
+  return {
+    ...message,
+    content,
+  } as ModelMessage;
+}
+
+// Helper function to truncate the last message in the array
+function truncateLastMessage(
+  message: ModelMessage,
+  _currentTokens: number,
+  availableTokens: number
+): ModelMessage {
+  const isStringMessage =
+    typeof message.content === "string" && message.role !== "tool";
+  const isToolMessage =
+    Array.isArray(message.content) && message.role === "tool";
+
+  if (isStringMessage) {
+    return truncateStringMessage(message, availableTokens);
+  }
+
+  if (isToolMessage) {
+    return truncateToolMessage(message, availableTokens);
+  }
+
+  return message;
+}
+
+// Handle case where available tokens are insufficient
+function handleInsufficientTokens(
+  systemMessage: ModelMessage | null,
+  maxTokens: number
+): ModelMessage[] | null {
+  if (systemMessage && typeof systemMessage.content === "string") {
+    return [
+      {
+        ...systemMessage,
+        content: trimPrompt(systemMessage.content, maxTokens),
+      },
+    ];
+  }
+  return systemMessage ? [systemMessage] : [];
+}
+
+// Remove messages from beginning until we fit within available tokens
+function removeMessagesUntilFit(
+  messages: ModelMessage[],
+  availableTokens: number
+): ModelMessage[] {
+  const truncatedMessages = [...messages];
+  let currentTokens = calculateMessagesTokens(truncatedMessages);
+
+  while (currentTokens > availableTokens && truncatedMessages.length > 0) {
+    truncatedMessages.shift(); // Remove oldest message first
+    currentTokens = calculateMessagesTokens(truncatedMessages);
+  }
+
+  return truncatedMessages;
+}
+
 // Truncate messages array to fit within token limit
 export function truncateMessages(
   messages: ModelMessage[],
@@ -93,87 +212,26 @@ export function truncateMessages(
   const availableTokens = maxTokens - systemTokens;
 
   if (availableTokens <= 0) {
-    // If system message itself exceeds limit, truncate it
-    if (systemMessage && typeof systemMessage.content === "string") {
-      return [
-        {
-          ...systemMessage,
-          content: trimPrompt(systemMessage.content, maxTokens),
-        },
-      ];
-    }
-    return systemMessage ? [systemMessage] : [];
+    const result = handleInsufficientTokens(systemMessage, maxTokens);
+    return result || [];
   }
 
   // Start with all other messages and remove from the beginning until we fit
-  const truncatedMessages = [...otherMessages];
-  let currentTokens = calculateMessagesTokens(truncatedMessages);
-
-  while (currentTokens > availableTokens && truncatedMessages.length > 0) {
-    truncatedMessages.shift(); // Remove oldest message first
-    currentTokens = calculateMessagesTokens(truncatedMessages);
-  }
+  const truncatedMessages = removeMessagesUntilFit(
+    otherMessages,
+    availableTokens
+  );
+  const currentTokens = calculateMessagesTokens(truncatedMessages);
 
   // If we still don't fit and have messages, truncate the content of the last message
   if (currentTokens > availableTokens && truncatedMessages.length > 0) {
     const lastMessage = truncatedMessages.at(-1);
-    if (
-      lastMessage &&
-      typeof lastMessage.content === "string" &&
-      lastMessage.role !== "tool"
-    ) {
-      const tokensToRemove = currentTokens - availableTokens;
-      const charsToRemove = tokensToRemove * 4; // rough estimate
-      const truncatedContent = lastMessage.content.slice(0, -charsToRemove);
-
-      truncatedMessages[truncatedMessages.length - 1] = {
-        ...lastMessage,
-        content: trimPrompt(truncatedContent, availableTokens),
-      };
-    } else if (
-      lastMessage &&
-      Array.isArray(lastMessage.content) &&
-      lastMessage.role === "tool"
-    ) {
-      // Handle tool messages with array content
-      const content = [...lastMessage.content];
-      const currentMessageTokens = calculateMessagesTokens([lastMessage]);
-      let tokensToRemove = currentMessageTokens - availableTokens;
-
-      // Truncate from the end of the content array
-      for (let i = content.length - 1; i >= 0 && tokensToRemove > 0; i--) {
-        const part = content[i];
-        if (
-          part.type === "tool-result" &&
-          part.output &&
-          typeof part.output === "object" &&
-          "value" in part.output &&
-          typeof part.output.value === "string"
-        ) {
-          const partTokens = encoder.encode(part.output.value).length;
-          if (partTokens > 0) {
-            // Truncate this part's output value
-            const targetTokens = Math.max(0, partTokens - tokensToRemove);
-            content[i] = {
-              ...part,
-              output: {
-                type: "text" as const,
-                value: trimPrompt(part.output.value, targetTokens),
-              },
-            };
-            tokensToRemove -= partTokens - targetTokens;
-          } else {
-            // Remove entire part if needed
-            content.splice(i, 1);
-            tokensToRemove -= partTokens;
-          }
-        }
-      }
-
-      truncatedMessages[truncatedMessages.length - 1] = {
-        ...lastMessage,
-        content,
-      } as ModelMessage;
+    if (lastMessage) {
+      truncatedMessages[truncatedMessages.length - 1] = truncateLastMessage(
+        lastMessage,
+        currentTokens,
+        availableTokens
+      );
     }
   }
 

@@ -389,28 +389,32 @@ function PureToolbar({
     return null;
   }
 
+  const getAnimateValue = () => {
+    if (!isToolbarVisible) {
+      return { opacity: 1, y: 0, height: 54, transition: { delay: 0 } };
+    }
+    if (selectedTool === "adjust-reading-level") {
+      return {
+        opacity: 1,
+        y: 0,
+        height: 6 * 43,
+        transition: { delay: 0 },
+        scale: 0.95,
+      };
+    }
+    return {
+      opacity: 1,
+      y: 0,
+      height: toolsByArtifactKind.length * 50,
+      transition: { delay: 0 },
+      scale: 1,
+    };
+  };
+
   return (
     <TooltipProvider delayDuration={0}>
       <motion.div
-        animate={
-          isToolbarVisible
-            ? selectedTool === "adjust-reading-level"
-              ? {
-                  opacity: 1,
-                  y: 0,
-                  height: 6 * 43,
-                  transition: { delay: 0 },
-                  scale: 0.95,
-                }
-              : {
-                  opacity: 1,
-                  y: 0,
-                  height: toolsByArtifactKind.length * 50,
-                  transition: { delay: 0 },
-                  scale: 1,
-                }
-            : { opacity: 1, y: 0, height: 54, transition: { delay: 0 } }
-        }
+        animate={getAnimateValue()}
         className="absolute right-6 bottom-6 flex cursor-pointer flex-col justify-end rounded-full border bg-background p-1.5 shadow-lg"
         exit={{ opacity: 0, y: -20, transition: { duration: 0.1 } }}
         initial={{ opacity: 0, y: -20, scale: 1 }}
@@ -438,7 +442,7 @@ function PureToolbar({
         ref={toolbarRef}
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
       >
-        {status === "streaming" ? (
+        {status === "streaming" && (
           <motion.div
             animate={{ scale: 1.4 }}
             className="p-3"
@@ -451,14 +455,16 @@ function PureToolbar({
           >
             <StopIcon />
           </motion.div>
-        ) : selectedTool === "adjust-reading-level" ? (
+        )}
+        {status !== "streaming" && selectedTool === "adjust-reading-level" && (
           <ReadingLevelSelector
             isAnimating={isAnimating}
             key="reading-level-selector"
             setSelectedTool={setSelectedTool}
             storeApi={storeApi}
           />
-        ) : (
+        )}
+        {status !== "streaming" && selectedTool !== "adjust-reading-level" && (
           <Tools
             isAnimating={isAnimating}
             isToolbarVisible={isToolbarVisible}

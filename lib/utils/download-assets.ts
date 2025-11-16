@@ -89,6 +89,45 @@ export async function downloadAssetsFromModelMessages(
  * Inlines any URL-based file/image parts within ModelMessage[] by replacing the URLs
  * with downloaded binary data. This ensures providers receive actual bytes.
  */
+function processFilePart(
+  part: FilePart,
+  downloaded: Record<string, DownloadResult>
+): FilePart {
+  const url = toHttpUrl((part as FilePart).data);
+  if (!url) {
+    return part;
+  }
+  const found = downloaded[url.toString()];
+  if (!found) {
+    return part;
+  }
+  return {
+    ...part,
+    data: found.data,
+    // keep existing mediaType; if missing, prefer detected content-type
+    mediaType: part.mediaType ?? found.mediaType ?? part.mediaType,
+  };
+}
+
+function processImagePart(
+  part: ImagePart,
+  downloaded: Record<string, DownloadResult>
+): ImagePart {
+  const url = toHttpUrl((part as ImagePart).image);
+  if (!url) {
+    return part;
+  }
+  const found = downloaded[url.toString()];
+  if (!found) {
+    return part;
+  }
+  return {
+    ...part,
+    image: found.data,
+    mediaType: part.mediaType ?? found.mediaType ?? part.mediaType,
+  };
+}
+
 export async function replaceFilePartUrlByBinaryDataInMessages(
   messages: ModelMessage[],
   downloadImplementation: DownloadImplementation = defaultDownload
@@ -102,35 +141,10 @@ export async function replaceFilePartUrlByBinaryDataInMessages(
     part: TextPart | ImagePart | FilePart | any
   ): TextPart | ImagePart | FilePart | any => {
     if (part.type === "file") {
-      const url = toHttpUrl((part as FilePart).data);
-      if (url) {
-        const found = downloaded[url.toString()];
-        if (found) {
-          const newPart: FilePart = {
-            ...part,
-            data: found.data,
-            // keep existing mediaType; if missing, prefer detected content-type
-            mediaType: part.mediaType ?? found.mediaType ?? part.mediaType,
-          };
-          return newPart;
-        }
-      }
-      return part;
+      return processFilePart(part, downloaded);
     }
     if (part.type === "image") {
-      const url = toHttpUrl((part as ImagePart).image);
-      if (url) {
-        const found = downloaded[url.toString()];
-        if (found) {
-          const newPart: ImagePart = {
-            ...part,
-            image: found.data,
-            mediaType: part.mediaType ?? found.mediaType ?? part.mediaType,
-          };
-          return newPart;
-        }
-      }
-      return part;
+      return processImagePart(part, downloaded);
     }
     // pass-through for text/tool/reasoning/etc
     return part;

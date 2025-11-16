@@ -1,12 +1,103 @@
 import { siteConfig } from "@/lib/config";
 
-export default function TermsPage() {
-  const currencySymbolMap: Record<string, string> = {
-    USD: "$",
-    EUR: "€",
-    GBP: "£",
-  };
+const currencySymbolMap: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+};
 
+function getPlanType(hasFree: boolean, hasPro: boolean): string {
+  if (hasFree && hasPro) {
+    return "free and paid";
+  }
+
+  if (hasPro) {
+    return "paid";
+  }
+
+  return "free";
+}
+
+type PricingSectionProps = {
+  hasFree: boolean;
+  hasPro: boolean;
+  currencySymbol: string;
+  paymentProcessors: string[];
+};
+
+function PricingSection({
+  hasFree,
+  hasPro,
+  currencySymbol,
+  paymentProcessors,
+}: PricingSectionProps) {
+  return (
+    <>
+      <p>
+        {siteConfig.appName} offers {getPlanType(hasFree, hasPro)} subscription
+        plans.
+      </p>
+      <ul>
+        {hasFree ? (
+          <li>
+            <strong>{siteConfig.pricing?.free?.name}:</strong>{" "}
+            {siteConfig.pricing?.free?.summary}
+          </li>
+        ) : null}
+        {hasPro ? (
+          <li>
+            <strong>{siteConfig.pricing?.pro?.name}:</strong> {currencySymbol}
+            {siteConfig.pricing?.pro?.monthlyPrice}/month —{" "}
+            {siteConfig.pricing?.pro?.summary}
+          </li>
+        ) : null}
+      </ul>
+      {paymentProcessors.length > 0 ? (
+        <p>
+          We use third-party payment processors to handle billing and payments:{" "}
+          {paymentProcessors.join(", ")}. {siteConfig.appName} does not store
+          any payment card details, bank information, or other sensitive payment
+          data. All payment information is processed directly by our providers.
+        </p>
+      ) : null}
+      {hasPro ? (
+        <ul>
+          <li>Billing is monthly and charged automatically</li>
+          <li>All fees are non-refundable except as expressly stated</li>
+          <li>We may change prices with 30 days notice</li>
+          <li>You are responsible for applicable taxes</li>
+          <li>Failed payments may result in suspension or termination</li>
+        </ul>
+      ) : null}
+    </>
+  );
+}
+
+type NoPricingSectionProps = {
+  paymentProcessors: string[];
+};
+
+function NoPricingSection({ paymentProcessors }: NoPricingSectionProps) {
+  return (
+    <>
+      <p>
+        {siteConfig.appName} currently does not offer paid plans. If we
+        introduce paid features in the future, this section will be updated and
+        you will be notified in advance.
+      </p>
+      {paymentProcessors.length > 0 ? (
+        <p>
+          When payments are enabled, billing will be processed by{" "}
+          {paymentProcessors.join(", ")}. We will not store payment card
+          details; payment data will be handled directly by our providers
+          according to their policies and security standards.
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+export default function TermsPage() {
   const currencyCode = siteConfig.pricing?.currency;
   const currencySymbol = currencyCode
     ? (currencySymbolMap[currencyCode] ?? currencyCode)
@@ -109,63 +200,14 @@ export default function TermsPage() {
 
       <h2>7. Pricing and Billing</h2>
       {hasAnyPlan ? (
-        <>
-          <p>
-            {siteConfig.appName} offers{" "}
-            {hasFree && hasPro ? "free and paid" : hasPro ? "paid" : "free"}{" "}
-            subscription plans.
-          </p>
-          <ul>
-            {hasFree ? (
-              <li>
-                <strong>{siteConfig.pricing?.free?.name}:</strong>{" "}
-                {siteConfig.pricing?.free?.summary}
-              </li>
-            ) : null}
-            {hasPro ? (
-              <li>
-                <strong>{siteConfig.pricing?.pro?.name}:</strong>{" "}
-                {currencySymbol}
-                {siteConfig.pricing?.pro?.monthlyPrice}/month —{" "}
-                {siteConfig.pricing?.pro?.summary}
-              </li>
-            ) : null}
-          </ul>
-          {paymentProcessors.length > 0 ? (
-            <p>
-              We use third-party payment processors to handle billing and
-              payments: {paymentProcessors.join(", ")}. {siteConfig.appName}{" "}
-              does not store any payment card details, bank information, or
-              other sensitive payment data. All payment information is processed
-              directly by our providers.
-            </p>
-          ) : null}
-          {hasPro ? (
-            <ul>
-              <li>Billing is monthly and charged automatically</li>
-              <li>All fees are non-refundable except as expressly stated</li>
-              <li>We may change prices with 30 days notice</li>
-              <li>You are responsible for applicable taxes</li>
-              <li>Failed payments may result in suspension or termination</li>
-            </ul>
-          ) : null}
-        </>
+        <PricingSection
+          currencySymbol={currencySymbol}
+          hasFree={hasFree}
+          hasPro={hasPro}
+          paymentProcessors={paymentProcessors}
+        />
       ) : (
-        <>
-          <p>
-            {siteConfig.appName} currently does not offer paid plans. If we
-            introduce paid features in the future, this section will be updated
-            and you will be notified in advance.
-          </p>
-          {paymentProcessors.length > 0 ? (
-            <p>
-              When payments are enabled, billing will be processed by{" "}
-              {paymentProcessors.join(", ")}. We will not store payment card
-              details; payment data will be handled directly by our providers
-              according to their policies and security standards.
-            </p>
-          ) : null}
-        </>
+        <NoPricingSection paymentProcessors={paymentProcessors} />
       )}
 
       <h2>8. Cancellation and Refunds</h2>

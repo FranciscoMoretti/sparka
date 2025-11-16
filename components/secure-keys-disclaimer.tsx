@@ -29,6 +29,7 @@ export function SecureKeysDisclaimer() {
           >
             View self-hosting instructions
             <svg
+              aria-hidden="true"
               className="ml-1 h-3 w-3"
               fill="none"
               stroke="currentColor"

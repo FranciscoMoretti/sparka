@@ -43,6 +43,42 @@ export function MessageTreeProvider({ children }: MessageTreeProviderProps) {
   const [allMessages, setAllMessages] = useState<ChatMessage[]>([]);
   const setMessages = useSetMessages();
 
+  // Helper function to get the query key based on chat type
+  const getQueryKey = useCallback(
+    () =>
+      type === "shared"
+        ? trpc.chat.getPublicChatMessages.queryKey({ chatId: id })
+        : trpc.chat.getChatMessages.queryKey({ chatId: id }),
+    [type, trpc.chat.getChatMessages, trpc.chat.getPublicChatMessages, id]
+  );
+
+  // Helper function to handle cache subscription events
+  const handleCacheEvent = useCallback(
+    (
+      event: Parameters<
+        ReturnType<typeof queryClient.getQueryCache>["subscribe"]
+      >[0]
+    ) => {
+      if (event.type !== "updated" || !event.query.queryKey) {
+        return;
+      }
+
+      const eventQueryKey = event.query.queryKey;
+      const currentQueryKey = getQueryKey();
+
+      // Compare query keys (simple deep comparison for this case)
+      if (JSON.stringify(eventQueryKey) !== JSON.stringify(currentQueryKey)) {
+        return;
+      }
+
+      const newData = event.query.state.data as ChatMessage[] | undefined;
+      if (newData) {
+        setAllMessages(newData);
+      }
+    },
+    [getQueryKey]
+  );
+
   // Select the appropriate chat ID based on isShared flag
   // Subscribe to query cache changes for the specific chat messages query
   useEffect(() => {
@@ -52,51 +88,19 @@ export function MessageTreeProvider({ children }: MessageTreeProviderProps) {
       setAllMessages([]);
     }
 
-    const queryKey =
-      type === "shared"
-        ? trpc.chat.getPublicChatMessages.queryKey({ chatId: id })
-        : trpc.chat.getChatMessages.queryKey({ chatId: id });
+    const queryKey = getQueryKey();
 
     // Get initial data
     const initialData = queryClient.getQueryData<ChatMessage[]>(queryKey);
     if (initialData) {
-      console.log("initialData", initialData);
       setAllMessages(initialData);
     }
 
     // Subscribe to cache changes
-    const unsubscribe = queryClient.getQueryCache().subscribe((event) => {
-      // Check if this event is for our specific query
-      if (event.type === "updated" && event.query.queryKey) {
-        const eventQueryKey = event.query.queryKey;
-
-        // Get current query key to avoid stale closure issues
-        const currentQueryKey =
-          type === "shared"
-            ? trpc.chat.getPublicChatMessages.queryKey({
-                chatId: id,
-              })
-            : trpc.chat.getChatMessages.queryKey({ chatId: id });
-
-        // Compare query keys (simple deep comparison for this case)
-        if (JSON.stringify(eventQueryKey) === JSON.stringify(currentQueryKey)) {
-          console.log("event.query.state.data", event.query.state.data);
-          const newData = event.query.state.data as ChatMessage[] | undefined;
-          if (newData) {
-            setAllMessages(newData);
-          }
-        }
-      }
-    });
+    const unsubscribe = queryClient.getQueryCache().subscribe(handleCacheEvent);
 
     return unsubscribe;
-  }, [
-    id,
-    type,
-    trpc.chat.getChatMessages,
-    trpc.chat.getPublicChatMessages,
-    queryClient,
-  ]);
+  }, [type, queryClient, getQueryKey, handleCacheEvent]);
 
   // Build parent->children mapping once
   const childrenMap = useMemo(() => {

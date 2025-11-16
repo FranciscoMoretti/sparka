@@ -27,6 +27,21 @@ type ConsoleProps = {
   setConsoleOutputs: Dispatch<SetStateAction<ConsoleOutput[]>>;
 };
 
+function renderStatusContent(
+  status: ConsoleOutput["status"],
+  contents: ConsoleOutputContent[]
+) {
+  if (status === "in_progress") {
+    return "Initializing...";
+  }
+  if (status === "loading_packages") {
+    return contents.map((content) =>
+      content.type === "text" ? content.value : null
+    );
+  }
+  return null;
+}
+
 export function Console({ consoleOutputs, setConsoleOutputs }: ConsoleProps) {
   const [height, setHeight] = useState<number>(300);
   const [isResizing, setIsResizing] = useState(false);
@@ -139,13 +154,10 @@ export function Console({ consoleOutputs, setConsoleOutputs }: ConsoleProps) {
                     <LoaderIcon />
                   </div>
                   <div className="text-muted-foreground">
-                    {consoleOutput.status === "in_progress"
-                      ? "Initializing..."
-                      : consoleOutput.status === "loading_packages"
-                        ? consoleOutput.contents.map((content) =>
-                            content.type === "text" ? content.value : null
-                          )
-                        : null}
+                    {renderStatusContent(
+                      consoleOutput.status,
+                      consoleOutput.contents
+                    )}
                   </div>
                 </div>
               ) : (
