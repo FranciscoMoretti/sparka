@@ -44,7 +44,7 @@ export function Chat({
   const stopAsync: UseChatHelpers<ChatMessage>["stop"] = useCallback(() => {
     const helpers = chatStore.getState().currentChatHelpers;
     if (!helpers?.stop) {
-      return;
+      return Promise.resolve();
     }
     return helpers.stop();
   }, [chatStore]);

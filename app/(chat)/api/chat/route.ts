@@ -53,8 +53,8 @@ import { ANONYMOUS_LIMITS } from "@/lib/types/anonymous";
 import { generateUUID } from "@/lib/utils";
 import { checkAnonymousRateLimit, getClientIP } from "@/lib/utils/rate-limit";
 import { generateTitleFromUserMessage } from "../../actions";
+import { getCreditReservation } from "./get-credit-reservation";
 import { getThreadUpToMessageId } from "./get-thread-up-to-message-id";
-import { getCreditReservation } from "./getCreditReservation";
 
 // Create shared Redis clients for resumable stream and cleanup
 let redisPublisher: any = null;

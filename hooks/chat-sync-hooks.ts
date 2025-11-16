@@ -538,7 +538,7 @@ export function useSaveMessageMutation() {
       chatId: string;
     }) => {
       // Posting chats persists via server side; local cache updates handled in onMutateAction
-      return { success: true } as const;
+      return Promise.resolve({ success: true } as const);
     },
     localMutationFn: async ({
       message,

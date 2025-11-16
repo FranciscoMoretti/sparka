@@ -7,9 +7,7 @@ const ANONYMOUS_CHATS_KEY = "anonymous-chats";
 const ANONYMOUS_MESSAGES_KEY = "anonymous-messages";
 const ANONYMOUS_DOCUMENTS_KEY = "anonymous-documents";
 
-export function loadAnonymousMessagesFromStorage(): Promise<
-  AnonymousMessage[]
-> {
+export function loadAnonymousMessagesFromStorage(): AnonymousMessage[] {
   try {
     const session = getAnonymousSession();
     if (!session) {
@@ -39,7 +37,7 @@ export function deleteAnonymousChat(chatId: string): Promise<boolean> {
   try {
     const session = getAnonymousSession();
     if (!session) {
-      return false;
+      return Promise.resolve(false);
     }
 
     // Get messages for this chat BEFORE removing them
@@ -80,17 +78,14 @@ export function deleteAnonymousChat(chatId: string): Promise<boolean> {
       JSON.stringify(filteredDocuments)
     );
 
-    return true;
+    return Promise.resolve(true);
   } catch (error) {
     console.error("Error deleting anonymous chat:", error);
-    return false;
+    return Promise.resolve(false);
   }
 }
 
-export function renameAnonymousChat(
-  chatId: string,
-  title: string
-): Promise<void> {
+export function renameAnonymousChat(chatId: string, title: string): void {
   try {
     const session = getAnonymousSession();
     if (!session) {
@@ -110,10 +105,7 @@ export function renameAnonymousChat(
   }
 }
 
-export function pinAnonymousChat(
-  chatId: string,
-  isPinned: boolean
-): Promise<void> {
+export function pinAnonymousChat(chatId: string, isPinned: boolean): void {
   try {
     const session = getAnonymousSession();
     if (!session) {
@@ -130,13 +122,14 @@ export function pinAnonymousChat(
     localStorage.setItem(ANONYMOUS_CHATS_KEY, JSON.stringify(updatedChats));
   } catch (error) {
     console.error("Error pinning anonymous chat:", error);
+    return;
   }
 }
 
 // Module-level functions for chat operations
 export function saveAnonymousChatToStorage(
   chat: Omit<AnonymousChat, "userId">
-): Promise<void> {
+): void {
   try {
     const session = getAnonymousSession();
     if (!session) {
@@ -347,7 +340,7 @@ export async function cloneAnonymousChat(
   }
 }
 
-export function loadAnonymousDocumentsFromStorage(): Promise<any[]> {
+export function loadAnonymousDocumentsFromStorage(): any[] {
   try {
     const session = getAnonymousSession();
     if (!session) {
@@ -395,7 +388,7 @@ export async function loadAnonymousDocumentsByDocumentId(
   return documents.filter((document) => document.id === documentId);
 }
 
-export function loadAnonymousChatsFromStorage(): Promise<AnonymousChat[]> {
+export function loadAnonymousChatsFromStorage(): AnonymousChat[] {
   try {
     const session = getAnonymousSession();
     if (!session) {
@@ -423,9 +416,7 @@ export function loadAnonymousChatsFromStorage(): Promise<AnonymousChat[]> {
   }
 }
 
-export function loadAnonymousChatById(
-  chatId: string
-): Promise<AnonymousChat | null> {
+export function loadAnonymousChatById(chatId: string): AnonymousChat | null {
   try {
     const session = getAnonymousSession();
     if (!session) {

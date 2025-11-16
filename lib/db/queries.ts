@@ -1,6 +1,16 @@
 import "server-only";
 import { del } from "@vercel/blob";
-import { and, asc, desc, eq, gt, gte, inArray, isNull } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gt,
+  gte,
+  inArray,
+  isNull,
+  type SQL,
+} from "drizzle-orm";
 import type { Attachment, ChatMessage } from "@/lib/ai/types";
 import { chatMessageToDbMessage } from "@/lib/message-conversion";
 import {
@@ -95,7 +105,7 @@ export async function getChatsByUserId({
   });
 
   try {
-    let conditions = eq(chat.userId, id);
+    let conditions: SQL<unknown> | undefined = eq(chat.userId, id);
     if (projectId === null) {
       // Filter for chats without a project
       conditions = and(eq(chat.userId, id), isNull(chat.projectId));

@@ -396,27 +396,49 @@ const MemoCode = memo<
 MemoCode.displayName = "MarkdownCode";
 
 export const components: Options["components"] = {
+  // @ts-expect-error - React 19.2.0 compatibility
   ol: MemoOl,
+  // @ts-expect-error - React 19.2.0 compatibility
   li: MemoLi,
+  // @ts-expect-error - React 19.2.0 compatibility
   ul: MemoUl,
+  // @ts-expect-error - React 19.2.0 compatibility
   hr: MemoHr,
+  // @ts-expect-error - React 19.2.0 compatibility
   strong: MemoStrong,
+  // @ts-expect-error - React 19.2.0 compatibility
   a: MemoA,
+  // @ts-expect-error - React 19.2.0 compatibility
   h1: MemoH1,
+  // @ts-expect-error - React 19.2.0 compatibility
   h2: MemoH2,
+  // @ts-expect-error - React 19.2.0 compatibility
   h3: MemoH3,
+  // @ts-expect-error - React 19.2.0 compatibility
   h4: MemoH4,
+  // @ts-expect-error - React 19.2.0 compatibility
   h5: MemoH5,
+  // @ts-expect-error - React 19.2.0 compatibility
   h6: MemoH6,
+  // @ts-expect-error - React 19.2.0 compatibility
   table: MemoTable,
+  // @ts-expect-error - React 19.2.0 compatibility
   thead: MemoThead,
+  // @ts-expect-error - React 19.2.0 compatibility
   tbody: MemoTbody,
+  // @ts-expect-error - React 19.2.0 compatibility
   tr: MemoTr,
+  // @ts-expect-error - React 19.2.0 compatibility
   th: MemoTh,
+  // @ts-expect-error - React 19.2.0 compatibility
   td: MemoTd,
+  // @ts-expect-error - React 19.2.0 compatibility
   blockquote: MemoBlockquote,
+  // @ts-expect-error - React 19.2.0 compatibility
   code: MemoCode,
   pre: ({ children }) => children,
+  // @ts-expect-error - React 19.2.0 compatibility
   sup: MemoSup,
+  // @ts-expect-error - React 19.2.0 compatibility
   sub: MemoSub,
 };

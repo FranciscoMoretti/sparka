@@ -1,5 +1,5 @@
 import { convertToModelMessages, stepCountIs, streamText } from "ai";
-import { addExplicitToolRequestToMessages } from "@/app/(chat)/api/chat/addExplicitToolRequestToMessages";
+import { addExplicitToolRequestToMessages } from "@/app/(chat)/api/chat/add-explicit-tool-request-to-messages";
 import { filterReasoningParts } from "@/app/(chat)/api/chat/filter-reasoning-parts";
 import { getRecentGeneratedImage } from "@/app/(chat)/api/chat/get-recent-generated-image";
 import { type AppModelId, getAppModelDefinition } from "@/lib/ai/app-models";

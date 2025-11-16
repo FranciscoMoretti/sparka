@@ -1,6 +1,5 @@
 {
   "lockfileVersion": 1,
-  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "sparka-ai",
@@ -144,7 +143,7 @@
         "server-only": "^0.0.1",
         "shiki": "3.13.0",
         "sonner": "^2.0.7",
-        "streamdown": "^1.4.0",
+        "streamdown": "1.4.0",
         "superjson": "^2.2.2",
         "swr": "^2.2.5",
         "tailwind-merge": "^3.3.1",
@@ -178,6 +177,7 @@
         "better-sqlite3": "^12.4.1",
         "drizzle-kit": "^0.25.0",
         "evalite": "1.0.0-beta.8",
+        "husky": "^9.1.7",
         "pino-pretty": "^13.1.1",
         "postcss": "^8",
         "storybook": "10.0.6",
@@ -2384,6 +2384,8 @@
     "https-proxy-agent": ["https-proxy-agent@7.0.6", "", { "dependencies": { "agent-base": "^7.1.2", "debug": "4" } }, "sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw=="],
 
     "humanize-ms": ["humanize-ms@1.2.1", "", { "dependencies": { "ms": "^2.0.0" } }, "sha512-Fl70vYtsAFb/C06PTS9dZBo7ihau+Tu/DNCk/OyHhea07S+aeMWpFFkUaXRa8fI+ScZbEI8dfSxwY7gxZ9SAVQ=="],
+
+    "husky": ["husky@9.1.7", "", { "bin": { "husky": "bin.js" } }, "sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA=="],
 
     "iconv-lite": ["iconv-lite@0.6.3", "", { "dependencies": { "safer-buffer": ">= 2.1.2 < 3.0.0" } }, "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw=="],
 

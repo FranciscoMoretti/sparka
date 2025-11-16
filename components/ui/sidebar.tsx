@@ -417,6 +417,7 @@ function SidebarGroupLabel({
   const Comp = asChild ? Slot : 'div';
 
   return (
+    // @ts-expect-error - React 19.2.0 compatibility
     <Comp
       className={cn(
         'flex h-8 shrink-0 items-center rounded-md px-2 font-medium text-sidebar-foreground/70 text-xs outline-hidden ring-sidebar-ring transition-[margin,opacity] duration-200 ease-linear focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
@@ -438,6 +439,7 @@ function SidebarGroupAction({
   const Comp = asChild ? Slot : 'button';
 
   return (
+    // @ts-expect-error - React 19.2.0 compatibility
     <Comp
       className={cn(
         'absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-hidden ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
@@ -528,6 +530,7 @@ function SidebarMenuButton({
   const { isMobile, state } = useSidebar();
 
   const button = (
+    // @ts-expect-error - React 19.2.0 compatibility
     <Comp
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
       data-active={isActive}
@@ -573,6 +576,7 @@ function SidebarMenuAction({
   const Comp = asChild ? Slot : 'button';
 
   return (
+    // @ts-expect-error - React 19.2.0 compatibility
     <Comp
       className={cn(
         'absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 text-sidebar-foreground outline-hidden ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg]:size-4 [&>svg]:shrink-0',
@@ -697,6 +701,7 @@ function SidebarMenuSubButton({
   const Comp = asChild ? Slot : 'a';
 
   return (
+    // @ts-expect-error - React 19.2.0 compatibility
     <Comp
       className={cn(
         '-translate-x-px flex h-7 min-w-0 items-center gap-2 overflow-hidden rounded-md px-2 text-sidebar-foreground outline-hidden ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-sidebar-accent-foreground',
