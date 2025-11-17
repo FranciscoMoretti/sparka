@@ -174,25 +174,24 @@ export const LexicalChatInput = ({
     [editor]
   );
 
-  // Handle value changes from parent
+  // Initialize editor with initialValue on mount only
+  // Note: We only initialize once. For editing different messages,
+  // a new component instance is created with a different key prop.
   useEffect(() => {
     if (editor && initialValue !== undefined) {
       editor.update(() => {
         const root = $getRoot();
-        const currentText = root.getTextContent();
-
-        if (currentText !== initialValue) {
-          root.clear();
-          const paragraph = $createParagraphNode();
-          if (initialValue) {
-            const textNode = $createTextNode(initialValue);
-            paragraph.append(textNode);
-          }
-          root.append(paragraph);
+        root.clear();
+        const paragraph = $createParagraphNode();
+        if (initialValue) {
+          const textNode = $createTextNode(initialValue);
+          paragraph.append(textNode);
         }
+        root.append(paragraph);
       });
     }
-  }, [editor, initialValue]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor]); // Only run on mount when editor is created
 
   const PlaceholderComponent = useCallback(
     () => (
