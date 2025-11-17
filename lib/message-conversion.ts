@@ -18,12 +18,19 @@ export function dbChatToUIChat(chat: Chat): UIChat {
 }
 
 export function dbMessageToChatMessage(message: DBMessage): ChatMessage {
-  // Note: This function should not be used directly for messages with parts
+  // Note: This function should not be used directly for messages with parts from the database
   // Use getAllMessagesByChatId which reconstructs parts from Part table
-  // Parts are now stored in Part table, not in Message.parts
+  // For authenticated users, parts are stored in Part table
+  // For anonymous users, parts are stored directly in the message object
+
+  // Check if this is an AnonymousMessage (has parts field)
+  const parts = "parts" in message && Array.isArray(message.parts)
+    ? message.parts as ChatMessage["parts"]
+    : []; // Parts are stored in Part table for authenticated users
+
   return {
     id: message.id,
-    parts: [], // Parts are stored in Part table - use getAllMessagesByChatId instead
+    parts,
     role: message.role as ChatMessage["role"],
     metadata: {
       createdAt: message.createdAt,
