@@ -269,6 +269,7 @@ function PureMultimodalInput({
 
     const message: ChatMessage = {
       id: generateUUID(),
+      content: input,
       parts: [
         ...attachments.map((attachment) => ({
           type: "file" as const,

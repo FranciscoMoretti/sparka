@@ -109,6 +109,8 @@ export function ChatInputProvider({
     return initialInput || getLocalStorageInput();
   }, [initialInput, getLocalStorageInput, localStorageEnabled]);
 
+  const inputValueRef = useRef<string>(getInitialInput());
+
   const handleModelChange = useCallback(
     async (modelId: AppModelId) => {
       const modelDef = getAppModelDefinition(modelId);
@@ -135,6 +137,7 @@ export function ChatInputProvider({
 
   const clearInput = useCallback(() => {
     editorRef.current?.clear();
+    inputValueRef.current = "";
     setLocalStorageInput("");
     setIsEmpty(true);
   }, [setLocalStorageInput]);
@@ -147,14 +150,12 @@ export function ChatInputProvider({
     setAttachments([]);
   }, []);
 
-  const getInputValue = useCallback(
-    () => editorRef.current?.getValue() || "",
-    []
-  );
+  const getInputValue = useCallback(() => inputValueRef.current || "", []);
 
   // Save to localStorage when input changes (will be called by the lexical editor)
   const handleInputChange = useCallback(
     (value: string) => {
+      inputValueRef.current = value;
       if (localStorageEnabled) {
         setLocalStorageInput(value);
       }
