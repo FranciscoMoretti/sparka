@@ -53,6 +53,10 @@ export function SidebarUserNav() {
     );
   }
 
+  const displayName = user.name || user.email || "User";
+  const userInitials = displayName.slice(0, 2).toUpperCase();
+  const avatarImageSrc = user.image || `https://avatar.vercel.sh/${user.email}`;
+
   return (
     <SidebarMenu>
       <SidebarMenuItem>
@@ -72,14 +76,9 @@ export function SidebarUserNav() {
                   state === "collapsed" && "size-6"
                 )}
               >
-                <AvatarImage
-                  alt={user.name || user.email || "User"}
-                  src={user.image || `https://avatar.vercel.sh/${user.email}`}
-                />
+                <AvatarImage alt={displayName} src={avatarImageSrc} />
                 <AvatarFallback className="rounded-lg">
-                  {(user.name || user.email || "User")
-                    .slice(0, 2)
-                    .toUpperCase()}
+                  {userInitials}
                 </AvatarFallback>
               </Avatar>
               <div
@@ -113,14 +112,9 @@ export function SidebarUserNav() {
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage
-                    alt={user.name || user.email || "User"}
-                    src={user.image || `https://avatar.vercel.sh/${user.email}`}
-                  />
+                  <AvatarImage alt={displayName} src={avatarImageSrc} />
                   <AvatarFallback className="rounded-lg">
-                    {(user.name || user.email || "User")
-                      .slice(0, 2)
-                      .toUpperCase()}
+                    {userInitials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">

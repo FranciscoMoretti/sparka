@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { HydrateClient, prefetch, trpc } from "@/trpc/server";
 import { ChatPage } from "./chat-page";
 
@@ -15,9 +14,7 @@ export default async function ChatPageRoute({
 
   return (
     <HydrateClient>
-      <Suspense>
-        <ChatPage id={chatId} />
-      </Suspense>
+      <ChatPage id={chatId} />
     </HydrateClient>
   );
 }

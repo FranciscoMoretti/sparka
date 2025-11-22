@@ -7,7 +7,6 @@ import { type AppModelId, DEFAULT_CHAT_MODEL } from "@/lib/ai/app-models";
 import { ANONYMOUS_LIMITS } from "@/lib/types/anonymous";
 import { DefaultModelProvider } from "@/providers/default-model-provider";
 import { SessionProvider } from "@/providers/session-provider";
-
 import { TRPCReactProvider } from "@/trpc/react";
 import { auth } from "../../lib/auth";
 import { ChatProviders } from "./chat-providers";
@@ -67,7 +66,6 @@ export default async function ChatLayout({
             >
               <DefaultModelProvider defaultModel={defaultModel}>
                 <KeyboardShortcuts />
-
                 {children}
               </DefaultModelProvider>
             </SidebarInset>

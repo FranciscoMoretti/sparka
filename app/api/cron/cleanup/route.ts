@@ -5,6 +5,9 @@ import { env } from "@/lib/env";
 
 const ORPHANED_ATTACHMENTS_RETENTION_TIME = 4 * 60 * 60 * 1000; // 4 hours
 
+// TODO: Make dynamic once we can out out of cache components granularly
+// export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     // Verify this is being called by Vercel cron

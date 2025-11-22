@@ -1,7 +1,6 @@
 import { isToday, isYesterday, subMonths, subWeeks } from "date-fns";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useSidebar } from "@/components/ui/sidebar";
 import {
   useGetAllChats,
   usePinChat,
@@ -26,7 +25,6 @@ const PROJECT_CHAT_REGEX = /^\/project\/[^/]+\/chat\/(.+)$/;
 export function SidebarChatsList() {
   const pathname = usePathname();
   const { data: allChats, isLoading } = useGetAllChats(50);
-  const { setOpenMobile } = useSidebar();
   const { mutate: renameChatMutation } = useRenameChat();
   const { mutate: pinChatMutation } = usePinChat();
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -142,7 +140,6 @@ export function SidebarChatsList() {
               onRename={(id, title) => {
                 renameChatMutation({ chatId: id, title });
               }}
-              setOpenMobile={setOpenMobile}
             />
           ))}
         </>
@@ -170,7 +167,6 @@ export function SidebarChatsList() {
               onRename={(id, title) => {
                 renameChatMutation({ chatId: id, title });
               }}
-              setOpenMobile={setOpenMobile}
             />
           ))}
         </>
@@ -196,7 +192,6 @@ export function SidebarChatsList() {
               onRename={(id, title) => {
                 renameChatMutation({ chatId: id, title });
               }}
-              setOpenMobile={setOpenMobile}
             />
           ))}
         </>
@@ -222,7 +217,6 @@ export function SidebarChatsList() {
               onRename={(id, title) => {
                 renameChatMutation({ chatId: id, title });
               }}
-              setOpenMobile={setOpenMobile}
             />
           ))}
         </>
@@ -248,7 +242,6 @@ export function SidebarChatsList() {
               onRename={(id, title) => {
                 renameChatMutation({ chatId: id, title });
               }}
-              setOpenMobile={setOpenMobile}
             />
           ))}
         </>
@@ -274,7 +267,6 @@ export function SidebarChatsList() {
               onRename={(id, title) => {
                 renameChatMutation({ chatId: id, title });
               }}
-              setOpenMobile={setOpenMobile}
             />
           ))}
         </>

@@ -1,6 +1,4 @@
 "use client";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { memo, useState } from "react";
 import { toast } from "sonner";
 import { ChatMenuItems } from "@/components/chat-menu-items";
@@ -18,6 +16,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import type { UIChat } from "@/lib/types/ui-chat";
+import { HoverPrefetchLink } from "./hover-prefetch-link";
 
 const PureSidebarChatItem = ({
   chat,
@@ -25,16 +24,13 @@ const PureSidebarChatItem = ({
   onDelete,
   onRename,
   onPin,
-  setOpenMobile,
 }: {
   chat: UIChat;
   isActive: boolean;
   onDelete: (chatId: string) => void;
   onRename: (chatId: string, title: string) => void;
   onPin: (chatId: string, isPinned: boolean) => void;
-  setOpenMobile: (open: boolean) => void;
 }) => {
-  const router = useRouter();
   const chatHref: `/project/${string}/chat/${string}` | `/chat/${string}` =
     chat.projectId
       ? `/project/${chat.projectId}/chat/${chat.id}`
@@ -85,24 +81,9 @@ const PureSidebarChatItem = ({
         </div>
       ) : (
         <SidebarMenuButton asChild isActive={isActive}>
-          <Link
-            href={chatHref}
-            onClick={(e) => {
-              // Allow middle-click and ctrl+click to open in new tab
-              if (e.button === 1 || e.ctrlKey || e.metaKey) {
-                return;
-              }
-
-              // Prevent default Link navigation for normal clicks
-              e.preventDefault();
-
-              router.push(chatHref);
-              setOpenMobile(false);
-            }} // TODO: Restore the prefetching after solving conflict with ppr
-            prefetch={false}
-          >
+          <HoverPrefetchLink href={chatHref}>
             <span>{chat.title}</span>
-          </Link>
+          </HoverPrefetchLink>
         </SidebarMenuButton>
       )}
 
