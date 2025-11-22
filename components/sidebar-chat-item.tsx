@@ -1,20 +1,14 @@
 "use client";
-import { PinIcon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { memo, useState } from "react";
 import { toast } from "sonner";
-
-import {
-  MoreHorizontalIcon,
-  PencilEditIcon,
-  TrashIcon,
-} from "@/components/icons";
+import { ChatMenuItems } from "@/components/chat-menu-items";
+import { MoreHorizontalIcon } from "@/components/icons";
 import { ShareDialog } from "@/components/share-button";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -23,7 +17,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { ShareMenuItem } from "@/components/upgrade-cta/share-menu-item";
 import type { UIChat } from "@/lib/types/ui-chat";
 
 const PureSidebarChatItem = ({
@@ -125,36 +118,17 @@ const PureSidebarChatItem = ({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="end" side="bottom">
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => {
+          <ChatMenuItems
+            includeShareItem
+            isPinned={chat.isPinned}
+            onDelete={() => onDelete(chat.id)}
+            onRename={() => {
               setIsEditing(true);
               setEditTitle(chat.title);
             }}
-          >
-            <PencilEditIcon />
-            <span>Rename</span>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => onPin(chat.id, !chat.isPinned)}
-          >
-            <PinIcon
-              className={`size-4 ${chat.isPinned ? "fill-current" : ""}`}
-            />
-            <span>{chat.isPinned ? "Unpin" : "Pin"}</span>
-          </DropdownMenuItem>
-
-          <ShareMenuItem onShare={() => setShareDialogOpen(true)} />
-
-          <DropdownMenuItem
-            className="cursor-pointer text-destructive focus:bg-destructive/15 focus:text-destructive dark:text-red-500"
-            onSelect={() => onDelete(chat.id)}
-          >
-            <TrashIcon />
-            <span>Delete</span>
-          </DropdownMenuItem>
+            onShare={() => setShareDialogOpen(true)}
+            onTogglePin={() => onPin(chat.id, !chat.isPinned)}
+          />
         </DropdownMenuContent>
       </DropdownMenu>
 

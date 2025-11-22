@@ -12,7 +12,7 @@ import { CustomStoreProvider } from "@/lib/stores/custom-store-provider";
 import { ChatInputProvider } from "@/providers/chat-input-provider";
 import { MessageTreeProvider } from "@/providers/message-tree-provider";
 
-export const ChatSystem = memo(function ChatSystem({
+export const ChatSystem = memo(function PureChatSystem({
   id,
   initialMessages,
   isReadonly,

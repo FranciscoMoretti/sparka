@@ -7,14 +7,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
 } from "@/components/ui/sidebar";
-import { AppSidebarFooterConditional } from "./app-sidebar-footer-conditional";
 import { AppSidebarHistoryConditional } from "./app-sidebar-history-conditional";
+import { SidebarUserNav } from "./sidebar-user-nav";
 
 export function AppSidebar() {
   return (
@@ -56,8 +57,10 @@ export function AppSidebar() {
           <AppSidebarHistoryConditional />
         </SidebarContent>
       </ScrollArea>
-
-      <AppSidebarFooterConditional />
+      <SidebarSeparator />
+      <SidebarFooter>
+        <SidebarUserNav />
+      </SidebarFooter>
     </Sidebar>
   );
 }

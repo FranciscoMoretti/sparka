@@ -4,15 +4,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { DeleteProjectDialog } from "@/components/delete-project-dialog";
-import {
-  MoreHorizontalIcon,
-  PencilEditIcon,
-  TrashIcon,
-} from "@/components/icons";
+import { MoreHorizontalIcon } from "@/components/icons";
+import { ProjectMenuItems } from "@/components/project-menu-items";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
@@ -104,23 +100,13 @@ export function SidebarProjectItem({
           </SidebarMenuAction>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" side="bottom">
-          <DropdownMenuItem
-            className="cursor-pointer"
-            onClick={() => {
+          <ProjectMenuItems
+            onDelete={() => setShowDeleteDialog(true)}
+            onRename={() => {
               setIsEditing(true);
               setEditName(project.name);
             }}
-          >
-            <PencilEditIcon />
-            <span>Rename</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            className="cursor-pointer text-destructive focus:bg-destructive/15 focus:text-destructive dark:text-red-500"
-            onSelect={() => setShowDeleteDialog(true)}
-          >
-            <TrashIcon />
-            <span>Delete</span>
-          </DropdownMenuItem>
+          />
         </DropdownMenuContent>
       </DropdownMenu>
       <DeleteProjectDialog
