@@ -1,4 +1,5 @@
 import type { UseChatHelpers } from "@ai-sdk/react";
+import { useChatStoreApi } from "@ai-sdk-tools/store";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatDistance } from "date-fns";
 import equal from "fast-deep-equal";
@@ -13,7 +14,6 @@ import { codeArtifact } from "@/lib/artifacts/code/client";
 import { sheetArtifact } from "@/lib/artifacts/sheet/client";
 import { textArtifact } from "@/lib/artifacts/text/client";
 import type { Document, Vote } from "@/lib/db/schema";
-import { useChatStoreApi } from "@ai-sdk-tools/store";
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/react";
 import {

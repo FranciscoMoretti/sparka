@@ -8,9 +8,7 @@ import { DataStreamProvider } from "@/components/data-stream-provider";
 import { ArtifactProvider } from "@/hooks/use-artifact";
 import type { AppModelId } from "@/lib/ai/app-models";
 import type { ChatMessage, UiToolName } from "@/lib/ai/types";
-import {
-  CustomStoreProvider
-} from "@/lib/stores/custom-store-provider";
+import { CustomStoreProvider } from "@/lib/stores/custom-store-provider";
 import { ChatInputProvider } from "@/providers/chat-input-provider";
 import { MessageTreeProvider } from "@/providers/message-tree-provider";
 
@@ -34,9 +32,7 @@ export const ChatSystem = memo(function ChatSystem({
   return (
     <ArtifactProvider>
       <DataStreamProvider>
-        <CustomStoreProvider<ChatMessage>
-          initialMessages={initialMessages}
-        >
+        <CustomStoreProvider<ChatMessage> initialMessages={initialMessages}>
           <MessageTreeProvider>
             {isReadonly ? (
               <>

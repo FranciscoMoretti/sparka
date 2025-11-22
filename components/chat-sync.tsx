@@ -89,48 +89,48 @@ export function ChatSync({
     id,
     generateId: generateUUID,
     onFinish: ({ message }) => {
-        saveChatMessage({ message, chatId: id });
+      saveChatMessage({ message, chatId: id });
+      setAutoResume(true);
+    },
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      fetch: fetchWithErrorHandlers,
+      prepareSendMessagesRequest({ messages, id: requestId, body }) {
         setAutoResume(true);
-      },
-      transport: new DefaultChatTransport({
-        api: "/api/chat",
-        fetch: fetchWithErrorHandlers,
-        prepareSendMessagesRequest({ messages, id: requestId, body }) {
-          setAutoResume(true);
 
-          return {
-            body: {
-              id: requestId,
-              message: messages.at(-1),
-              prevMessages: isAuthenticated ? [] : messages.slice(0, -1),
-              projectId,
-              ...body,
-            },
-          };
-        },
-      }),
-      onData: (dataPart) => {
-        setDataStream((ds) => (ds ? [...ds, dataPart] : []));
+        return {
+          body: {
+            id: requestId,
+            message: messages.at(-1),
+            prevMessages: isAuthenticated ? [] : messages.slice(0, -1),
+            projectId,
+            ...body,
+          },
+        };
       },
-      onError: (error) => {
-        if (
-          error instanceof ChatSDKError &&
-          error.type === "not_found" &&
-          error.surface === "stream"
-        ) {
-          setAutoResume(false);
-        }
+    }),
+    onData: (dataPart) => {
+      setDataStream((ds) => (ds ? [...ds, dataPart] : []));
+    },
+    onError: (error) => {
+      if (
+        error instanceof ChatSDKError &&
+        error.type === "not_found" &&
+        error.surface === "stream"
+      ) {
+        setAutoResume(false);
+      }
 
-        console.error(error);
-        const cause = error.cause;
-        if (cause && typeof cause === "string") {
-          toast.error(error.message ?? "An error occured, please try again!", {
-            description: cause,
-          });
-        } else {
-          toast.error(error.message ?? "An error occured, please try again!");
-        }
-      },
+      console.error(error);
+      const cause = error.cause;
+      if (cause && typeof cause === "string") {
+        toast.error(error.message ?? "An error occured, please try again!", {
+          description: cause,
+        });
+      } else {
+        toast.error(error.message ?? "An error occured, please try again!");
+      }
+    },
   });
 
   // useEffect(() => {

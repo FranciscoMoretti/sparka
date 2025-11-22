@@ -1,6 +1,6 @@
 "use client";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { notFound, usePathname } from "next/navigation";
+import { notFound } from "next/navigation";
 import { useMemo } from "react";
 import { ChatSystem } from "@/components/chat-system";
 import {
@@ -9,20 +9,19 @@ import {
 } from "@/hooks/chat-sync-hooks";
 import type { UiToolName } from "@/lib/ai/types";
 import { getDefaultThread } from "@/lib/thread-utils";
-import { useChatId } from "@/providers/chat-id-provider";
 
-const PROJECT_ID_PATTERN = /^\/project\/([^/]+)/;
-
-export function ProjectChatPageRouter() {
-  const { id } = useChatId();
-  const pathname = usePathname();
-
-  // Extract projectId from pathname
-  const projectMatch = pathname?.match(PROJECT_ID_PATTERN);
-  const projectId = projectMatch ? projectMatch[1] : undefined;
-  const getChatByIdQueryOptions = useGetChatByIdQueryOptions(id);
+export function ProjectChatPage({
+  chatId,
+  projectId,
+}: {
+  chatId: string;
+  projectId: string;
+}) {
+  const getChatByIdQueryOptions = useGetChatByIdQueryOptions(chatId);
   const { data: chat } = useSuspenseQuery(getChatByIdQueryOptions);
-  const getMessagesByChatIdQueryOptions = useGetChatMessagesQueryOptions();
+  const getMessagesByChatIdQueryOptions = useGetChatMessagesQueryOptions({
+    chatId,
+  });
   const { data: messages } = useSuspenseQuery(getMessagesByChatIdQueryOptions);
 
   const initialThreadMessages = useMemo(() => {
@@ -52,10 +51,6 @@ export function ProjectChatPageRouter() {
     }
     return null;
   }, [messages]);
-
-  if (!id) {
-    return notFound();
-  }
 
   if (!chat) {
     return notFound();

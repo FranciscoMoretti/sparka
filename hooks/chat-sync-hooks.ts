@@ -112,11 +112,19 @@ export function useSaveChat() {
   };
 }
 
-export function useGetChatMessagesQueryOptions() {
+export function useGetChatMessagesQueryOptions({
+  chatId: chatIdOverride,
+  type: typeOverride,
+}: {
+  chatId?: string;
+  type?: "chat" | "provisional" | "shared";
+} = {}) {
   const { data: session } = useSession();
   const isAuthenticated = !!session?.user;
   const trpc = useTRPC();
-  const { id: chatId, type } = useChatId();
+  const { id: contextChatId, type: contextType } = useChatId();
+  const chatId = chatIdOverride ?? contextChatId;
+  const type = typeOverride ?? contextType;
   const baseQueryOptions = trpc.chat.getChatMessages.queryOptions({
     chatId: chatId || "",
   });

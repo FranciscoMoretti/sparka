@@ -3,8 +3,8 @@
 import type { UIMessage } from "@ai-sdk/react";
 import {
   Provider as ChatProvider,
+  ChatStoreContext,
   createChatStoreCreator,
-  ChatStoreContext
 } from "@ai-sdk-tools/store";
 import { type PropsWithChildren, useContext, useRef } from "react";
 import { devtools, subscribeWithSelector } from "zustand/middleware";
@@ -15,9 +15,8 @@ import {
   withMessageParts,
 } from "./with-message-parts";
 
-
 export type CustomChatStoreState<UI_MESSAGE extends UIMessage = UIMessage> =
-  PartsAugmentedState<UI_MESSAGE> // & OtherAugmentedState<UI_MESSAGE> to extend
+  PartsAugmentedState<UI_MESSAGE>; // & OtherAugmentedState<UI_MESSAGE> to extend
 
 export function createChatStore<TMessage extends UIMessage = UIMessage>(
   initialMessages: TMessage[] = []
@@ -35,7 +34,6 @@ export function createChatStore<TMessage extends UIMessage = UIMessage>(
 export type CustomChatStoreApi<TMessage extends UIMessage = UIMessage> =
   ReturnType<typeof createChatStore<TMessage>>;
 
-
 export function useCustomChatStoreApi<
   TMessage extends UIMessage = UIMessage,
 >() {
@@ -44,15 +42,15 @@ export function useCustomChatStoreApi<
   return store as CustomChatStoreApi<TMessage>;
 }
 
-
 type ChatProviderProps = Parameters<typeof ChatProvider>[0];
 
 export function CustomStoreProvider<TMessage extends UIMessage = UIMessage>({
   initialMessages = [],
   children,
-}:   PropsWithChildren<{
-    initialMessages?: TMessage[];
-  }> & Omit<ChatProviderProps, 'initialMessages' | 'store'>) {
+}: PropsWithChildren<{
+  initialMessages?: TMessage[];
+}> &
+  Omit<ChatProviderProps, "initialMessages" | "store">) {
   const storeRef = useRef<CustomChatStoreApi<TMessage> | null>(null);
 
   if (storeRef.current === null) {

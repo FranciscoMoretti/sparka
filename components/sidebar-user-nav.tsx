@@ -1,6 +1,7 @@
 "use client";
 import { Coins } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -18,6 +19,7 @@ export function HeaderUserNav({
 }: {
   user: NonNullable<Session["user"]>;
 }) {
+  const router = useRouter();
   const { credits } = useGetCredits();
 
   return (
@@ -54,7 +56,8 @@ export function HeaderUserNav({
             className="w-full cursor-pointer"
             onClick={async () => {
               await authClient.signOut();
-              window.location.href = "/";
+              router.push("/");
+              router.refresh();
             }}
             type="button"
           >

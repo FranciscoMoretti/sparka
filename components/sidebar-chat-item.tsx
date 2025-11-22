@@ -1,6 +1,7 @@
 "use client";
 import { PinIcon } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { memo, useState } from "react";
 import { toast } from "sonner";
 
@@ -40,6 +41,7 @@ const PureSidebarChatItem = ({
   onPin: (chatId: string, isPinned: boolean) => void;
   setOpenMobile: (open: boolean) => void;
 }) => {
+  const router = useRouter();
   const chatHref: `/project/${string}/chat/${string}` | `/chat/${string}` =
     chat.projectId
       ? `/project/${chat.projectId}/chat/${chat.id}`
@@ -101,8 +103,7 @@ const PureSidebarChatItem = ({
               // Prevent default Link navigation for normal clicks
               e.preventDefault();
 
-              // Use History API for client-side navigation
-              window.history.pushState(null, "", chatHref);
+              router.push(chatHref);
               setOpenMobile(false);
             }} // TODO: Restore the prefetching after solving conflict with ppr
             prefetch={false}

@@ -1,6 +1,6 @@
 // This file has hooks that are enabled by the @ai-sdk-tools/store
 
-import { useChatStoreApi, StoreState } from "@ai-sdk-tools/store";
+import { type StoreState, useChatStoreApi } from "@ai-sdk-tools/store";
 import equal from "fast-deep-equal";
 import { shallow } from "zustand/shallow";
 import { useStoreWithEqualityFn } from "zustand/traditional";

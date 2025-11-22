@@ -2,6 +2,7 @@
 
 import { useChatActions } from "@ai-sdk-tools/store";
 import { motion } from "motion/react";
+import { useRouter } from "next/navigation";
 import { memo } from "react";
 import type { AppModelId } from "@/lib/ai/app-models";
 import type { ChatMessage } from "@/lib/ai/types";
@@ -19,6 +20,7 @@ function PureSuggestedActions({
   selectedModelId,
   className,
 }: SuggestedActionsProps) {
+  const router = useRouter();
   const { sendMessage } = useChatActions<ChatMessage>();
   const suggestedActions = [
     {
@@ -64,7 +66,7 @@ function PureSuggestedActions({
                 return;
               }
 
-              window.history.replaceState({}, "", `/chat/${chatId}`);
+              window.history.pushState({}, "", `/chat/${chatId}`);
 
               sendMessage(
                 {

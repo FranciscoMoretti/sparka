@@ -1,4 +1,5 @@
 import { useChatStoreApi } from "@ai-sdk-tools/store";
+import type { ChatMessage } from "@/lib/ai/types";
 import { isLastArtifact } from "../is-last-artifact";
 import {
   DocumentToolCall,
@@ -8,7 +9,6 @@ import {
   type UpdateDocumentTool,
 } from "./document-common";
 import { DocumentPreview } from "./document-preview";
-import type { ChatMessage } from "@/lib/ai/types";
 
 export function UpdateDocumentMessage({
   tool,

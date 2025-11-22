@@ -33,10 +33,7 @@ import {
 } from "@/lib/ai/app-models";
 import type { Attachment, ChatMessage, UiToolName } from "@/lib/ai/types";
 import { processFilesForUpload } from "@/lib/files/upload-prep";
-import {
-  useLastMessageId,
-  useMessageIds,
-} from "@/lib/stores/hooks";
+import { useLastMessageId, useMessageIds } from "@/lib/stores/hooks";
 import { ANONYMOUS_LIMITS } from "@/lib/types/anonymous";
 import { generateUUID } from "@/lib/utils";
 import { useChatInput } from "@/providers/chat-input-provider";
@@ -310,6 +307,7 @@ function PureMultimodalInput({
     onSendMessage,
     updateChatUrl,
     trimMessagesInEditMode,
+    sendMessage,
   ]);
 
   const submitForm = useCallback(() => {
@@ -334,11 +332,11 @@ function PureMultimodalInput({
         if (response.ok) {
           const data: { url: string; pathname: string; contentType: string } =
             await response.json();
-          const { url, pathname, contentType } = data;
+          const { url, pathname: uploadedPathname, contentType } = data;
 
           return {
             url,
-            name: pathname,
+            name: uploadedPathname,
             contentType,
           };
         }
