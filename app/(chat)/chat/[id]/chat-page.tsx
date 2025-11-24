@@ -13,7 +13,9 @@ import { getDefaultThread } from "@/lib/thread-utils";
 export function ChatPage({ id }: { id: string }) {
   const getChatByIdQueryOptions = useGetChatByIdQueryOptions(id);
   const { data: chat } = useSuspenseQuery(getChatByIdQueryOptions);
-  const getMessagesByChatIdQueryOptions = useGetChatMessagesQueryOptions();
+  const getMessagesByChatIdQueryOptions = useGetChatMessagesQueryOptions({
+    chatId: id,
+  });
   const { data: messages } = useSuspenseQuery(getMessagesByChatIdQueryOptions);
 
   const initialThreadMessages = useMemo(() => {

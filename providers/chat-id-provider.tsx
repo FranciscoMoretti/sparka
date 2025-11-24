@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import {
   createContext,
   type ReactNode,
@@ -24,67 +24,47 @@ type ChatId = {
   type: "chat" | "provisional" | "shared";
 };
 
-const PROJECT_ROUTE_PATTERN = /^\/project\/([^/]+)(?:\/chat\/(.+))?$/;
-
 export function ChatIdProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const params = useParams<{
+    id?: string;
+    projectId?: string;
+    chatId?: string;
+  }>();
   const provisionalChatIdRef = useRef<string>(generateUUID());
 
-  // Compute final id and type directly from pathname and state
+  const path = pathname ?? "";
+  const routeId = params.id;
+  const projectId = params.projectId;
+  const chatId = params.chatId;
+
   const { id, type } = useMemo<ChatId>(() => {
-    // Handle shared chat paths
-    if (pathname?.startsWith("/share/")) {
-      const sharedChatId = pathname.replace("/share/", "") || null;
-      if (sharedChatId) {
-        return {
-          id: sharedChatId,
-          type: "shared",
-        };
-      }
+    if (path.startsWith("/share/") && routeId) {
+      return { id: routeId, type: "shared" };
     }
 
-    // Handle project routes
-    const projectMatch = pathname?.match(PROJECT_ROUTE_PATTERN);
-    if (projectMatch) {
-      const [, _projectId, chatId] = projectMatch;
-      if (chatId) {
-        // /project/:projectId/chat/:chatId
-        return {
-          id: chatId,
-          type: "chat",
-        };
-      }
-      // /project/:projectId - provisional chat
-      return {
-        id: provisionalChatIdRef.current,
-        type: "provisional",
-      };
+    if (chatId) {
+      return { id: chatId, type: "chat" };
     }
 
-    if (pathname === "/") {
-      return {
-        id: provisionalChatIdRef.current,
-        type: "provisional",
-      };
+    if (routeId && path.startsWith("/chat/")) {
+      return { id: routeId, type: "chat" };
     }
 
-    const urlChatId = pathname.replace("/chat/", "");
-    if (urlChatId === provisionalChatIdRef.current) {
-      // Id was provisional and now the url has been updated
-
-      // Generate a new provisional id for a potential new chat
-      provisionalChatIdRef.current = generateUUID();
-
-      return {
-        id: urlChatId,
-        type: "provisional",
-      };
+    if (projectId && !chatId) {
+      return { id: provisionalChatIdRef.current, type: "provisional" };
     }
-    return {
-      id: urlChatId,
-      type: "chat",
-    };
-  }, [pathname]);
+
+    if (path === "/") {
+      return { id: provisionalChatIdRef.current, type: "provisional" };
+    }
+
+    if (routeId) {
+      return { id: routeId, type: "chat" };
+    }
+
+    return { id: provisionalChatIdRef.current, type: "provisional" };
+  }, [chatId, path, projectId, routeId]);
 
   const refreshChatID = useCallback(() => {
     provisionalChatIdRef.current = generateUUID();

@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/consistent-type-definitions */
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { DeleteProjectDialog } from "@/components/delete-project-dialog";
 import { MoreHorizontalIcon } from "@/components/icons";
@@ -19,6 +18,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useRenameProject } from "@/hooks/chat-sync-hooks";
 import type { Project } from "@/lib/db/schema";
+import { HoverPrefetchLink } from "./hover-prefetch-link";
 
 export function SidebarProjectItem({
   project,
@@ -83,9 +83,9 @@ export function SidebarProjectItem({
           className="cursor-pointer"
           isActive={isActive}
         >
-          <Link href={projectHref} prefetch={false}>
+          <HoverPrefetchLink href={projectHref}>
             <span>{project.name}</span>
-          </Link>
+          </HoverPrefetchLink>
         </SidebarMenuButton>
       )}
 

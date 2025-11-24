@@ -308,6 +308,7 @@ function PureMultimodalInput({
     sendMessage,
     updateChatUrl,
     trimMessagesInEditMode,
+    sendMessage,
   ]);
 
   const submitForm = useCallback(() => {
@@ -332,11 +333,11 @@ function PureMultimodalInput({
         if (response.ok) {
           const data: { url: string; pathname: string; contentType: string } =
             await response.json();
-          const { url, pathname, contentType } = data;
+          const { url, pathname: uploadedPathname, contentType } = data;
 
           return {
             url,
-            name: pathname,
+            name: uploadedPathname,
             contentType,
           };
         }
