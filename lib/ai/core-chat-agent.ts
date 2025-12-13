@@ -89,8 +89,6 @@ export async function createCoreChatAgent({
     ...mcpTools,
   };
 
-  console.log("allTools", allTools);
-
   // Compute final activeTools for streamText:
   // 1. Filter budget-allowed base tools to only those that actually exist in baseTools
   const existingBaseActiveTools = budgetAllowedTools.filter(

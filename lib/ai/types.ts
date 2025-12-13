@@ -101,6 +101,9 @@ export type CustomUIDataTypes = {
   kind: ArtifactKind;
   clear: null;
   finish: null;
+  chatConfirmed: {
+    chatId: string;
+  };
   researchUpdate: ResearchUpdate;
   followupSuggestions: FollowupSuggestions;
 };

@@ -6,6 +6,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useIsSharedRoute } from "@/hooks/use-is-shared-route";
 import type { ChatMessage } from "@/lib/ai/types";
 import { getAnonymousSession } from "@/lib/anonymous-session-client";
 import type { Document, Project } from "@/lib/db/schema";
@@ -14,8 +15,6 @@ import type { UIChat } from "@/lib/types/ui-chat";
 import { useChatId } from "@/providers/chat-id-provider";
 import { useSession } from "@/providers/session-provider";
 import { useTRPC } from "@/trpc/react";
-
-const DISABLED_PROJECT_ID = "00000000-0000-0000-0000-000000000000";
 
 export function useProject(
   projectId: string | null,
@@ -26,7 +25,7 @@ export function useProject(
 
   return useQuery({
     ...trpc.project.getById.queryOptions({
-      id: projectId ?? DISABLED_PROJECT_ID,
+      id: projectId ?? "",
     }),
     enabled: (enabled ?? true) && !!session?.user && !!projectId,
   });
@@ -35,11 +34,12 @@ export function useProject(
 export function useGetChatMessagesQueryOptions() {
   const { data: session } = useSession();
   const trpc = useTRPC();
-  const { id: chatId, type } = useChatId();
+  const { id: chatId, isPersisted } = useChatId();
+  const isShared = useIsSharedRoute();
 
   return {
     ...trpc.chat.getChatMessages.queryOptions({ chatId: chatId || "" }),
-    enabled: !!chatId && !!session?.user && type === "chat",
+    enabled: !!chatId && isPersisted && (isShared || !!session?.user),
   };
 }
 
@@ -307,6 +307,7 @@ export function useSaveMessageMutation() {
   const trpc = useTRPC();
   const qc = useQueryClient();
 
+  const { confirmChatId } = useChatId();
   return useMutation({
     // Message is saved in the backend by another route. This doesn't need to actually mutate
     mutationFn: (_: { message: ChatMessage; chatId: string }) =>
@@ -322,6 +323,8 @@ export function useSaveMessageMutation() {
     },
     onSuccess: async (_data, { message, chatId }) => {
       if (isAuthenticated && message.role === "assistant") {
+        // TODO: Move this to the data-stream-handler (earlier) once the query cache is independent of message
+        confirmChatId(chatId);
         qc.invalidateQueries({
           queryKey: trpc.credits.getAvailableCredits.queryKey(),
         });
@@ -406,14 +409,14 @@ export function useSaveDocument(
 
 export function useDocuments(id: string, disable: boolean) {
   const trpc = useTRPC();
-  const { type } = useChatId();
+  const isShared = useIsSharedRoute();
   const { data: session } = useSession();
 
   return useQuery({
-    ...(type === "shared"
+    ...(isShared
       ? trpc.document.getPublicDocuments.queryOptions({ id })
       : trpc.document.getDocuments.queryOptions({ id })),
-    enabled: !disable && !!id && (type === "shared" || !!session?.user),
+    enabled: !disable && !!id && (isShared || !!session?.user),
   });
 }
 

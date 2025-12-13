@@ -149,6 +149,7 @@ export function DataStreamHandler({ id: _id }: { id: string }) {
   const lastProcessedIndex = useRef(-1);
   const { data: session } = useSession();
   const { setSelectedTool } = useChatInput();
+  // const { confirmChatId } = useChatId();
   const saveDocumentMutation = useSaveDocument(
     artifact.documentId,
     artifact.messageId
@@ -164,6 +165,11 @@ export function DataStreamHandler({ id: _id }: { id: string }) {
     lastProcessedIndex.current = dataStream.length - 1;
 
     for (const delta of newDeltas) {
+      if (delta.type === "data-chatConfirmed" && isAuthenticated) {
+        // TODO: Reenable once chat threads are independent of getChatById query cache
+        // confirmChatId(delta.data.chatId);
+      }
+
       handleResearchUpdate({ delta, setSelectedTool });
 
       processArtifactStreamPart({
@@ -190,6 +196,7 @@ export function DataStreamHandler({ id: _id }: { id: string }) {
     saveDocumentMutation,
     isAuthenticated,
     setSelectedTool,
+    // confirmChatId,
   ]);
 
   return null;

@@ -469,6 +469,16 @@ async function createChatStream({
   // Build the data stream that will emit tokens
   const stream = createUIMessageStream<ChatMessage>({
     execute: async ({ writer: dataStream }) => {
+      // Confirm chat persistence ASAP (chat + user message are persisted before streaming begins)
+      if (!isAnonymous) {
+        dataStream.write({
+          id: generateUUID(),
+          type: "data-chatConfirmed",
+          data: { chatId },
+          transient: true,
+        });
+      }
+
       const { result, contextForLLM } = await createCoreChatAgent({
         system,
         userMessage,

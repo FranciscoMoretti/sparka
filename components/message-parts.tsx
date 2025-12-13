@@ -122,7 +122,7 @@ function PureMessagePart({
   const part = useMessagePartByPartIdx(messageId, partIdx);
 
   if (isTextUIPart(part)) {
-    return <TextMessagePart messageId={messageId} partIdx={partIdx} />;
+    return <TextMessagePart isLoading={isLoading} text={part.text} />;
   }
 
   if (isReasoningUIPart(part)) {

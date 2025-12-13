@@ -1,11 +1,22 @@
-export type ChatIdType = "chat" | "provisional" | "shared";
+export type ChatIdType = "chat" | "provisional";
 
-export type ChatId = {
+export type ProvisionalChatId = {
   id: string;
-  type: ChatIdType;
-  /** True when the provisional ID was just persisted and should be regenerated */
-  shouldRefreshProvisionalId: boolean;
+  type: "provisional";
+  /**
+   * True when the current chatId is known to be persisted server-side (i.e. safe to query).
+   * For provisional chats this is always false.
+   */
+  isPersisted: false;
 };
+
+export type PersistedChatId = {
+  id: string;
+  type: "chat";
+  isPersisted: true;
+};
+
+export type ChatId = ProvisionalChatId | PersistedChatId;
 
 const SHARE_ROUTE_PATTERN = /^\/share\/(.+)$/;
 const PROJECT_ROUTE_PATTERN = /^\/project\/([^/]+)(?:\/chat\/(.+))?$/;
@@ -27,41 +38,38 @@ export function resolveChatId({
   if (shareMatch) {
     return {
       id: shareMatch[1],
-      type: "shared",
-      shouldRefreshProvisionalId: false,
+      type: "chat",
+      isPersisted: true,
     };
   }
 
-  // /project/:projectId/chat/:chatId → existing chat (refresh if matches provisional)
+  // /project/:projectId/chat/:chatId → chat
   // /project/:projectId → provisional
   const projectMatch = pathname?.match(PROJECT_ROUTE_PATTERN);
   if (projectMatch) {
     const chatId = projectMatch[2];
     if (chatId) {
-      // URL has a chat ID - check if it's the provisional one being persisted
-      const matchesProvisional = chatId === provisionalId;
       return {
         id: chatId,
-        type: matchesProvisional ? "provisional" : "chat",
-        shouldRefreshProvisionalId: matchesProvisional,
+        type: "chat",
+        isPersisted: true,
       };
     }
     return {
       id: provisionalId,
       type: "provisional",
-      shouldRefreshProvisionalId: false,
+      isPersisted: false,
     };
   }
 
-  // /chat/:id → chat (refresh if matches provisional, meaning it was just persisted)
+  // /chat/:id → chat
   const chatMatch = pathname?.match(CHAT_ROUTE_PATTERN);
   if (chatMatch) {
     const urlChatId = chatMatch[1];
-    const matchesProvisional = urlChatId === provisionalId;
     return {
       id: urlChatId,
-      type: matchesProvisional ? "provisional" : "chat",
-      shouldRefreshProvisionalId: matchesProvisional,
+      type: "chat",
+      isPersisted: true,
     };
   }
 
@@ -69,6 +77,6 @@ export function resolveChatId({
   return {
     id: provisionalId,
     type: "provisional",
-    shouldRefreshProvisionalId: false,
+    isPersisted: false,
   };
 }

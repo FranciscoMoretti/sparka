@@ -93,21 +93,8 @@ const PureSidebarChatItem = ({
               if (e.button === 1 || e.ctrlKey || e.metaKey) {
                 return;
               }
-
-              // Check if we're on a chat route (/ or /chat/*)
-              const isChatRoute =
-                pathname === "/" || pathname.startsWith("/chat/");
-
-              if (isChatRoute) {
-                // Prevent default Link navigation for normal clicks
-                e.preventDefault();
-                // Use History API for client-side navigation
-                window.history.pushState(null, "", chatHref);
-              } else {
-                // Use router.push for other routes (e.g., /project/*)
-                e.preventDefault();
-                router.push(chatHref);
-              }
+              e.preventDefault();
+              router.push(chatHref);
               setOpenMobile(false);
             }} // TODO: Restore the prefetching after solving conflict with ppr
             prefetch={false}

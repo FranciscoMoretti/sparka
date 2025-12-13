@@ -1,5 +1,5 @@
 import { HydrateClient, prefetch, trpc } from "@/trpc/server";
-import { ProjectPageRouter } from "./project-page-router";
+import { ProjectPage } from "./project-page";
 
 export default async function ProjectPageRoute({
   params,
@@ -14,7 +14,7 @@ export default async function ProjectPageRoute({
 
   return (
     <HydrateClient>
-      <ProjectPageRouter />
+      <ProjectPage />
     </HydrateClient>
   );
 }

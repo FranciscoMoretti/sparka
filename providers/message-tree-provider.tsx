@@ -11,6 +11,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { useIsSharedRoute } from "@/hooks/use-is-shared-route";
 import type { ChatMessage } from "@/lib/ai/types";
 import {
   buildThreadFromLeaf,
@@ -38,7 +39,8 @@ type MessageTreeProviderProps = {
 };
 
 export function MessageTreeProvider({ children }: MessageTreeProviderProps) {
-  const { id, type } = useChatId();
+  const { id, isPersisted } = useChatId();
+  const isShared = useIsSharedRoute();
   const pathname = usePathname();
   const trpc = useTRPC();
   const queryClient = useQueryClient();
@@ -50,16 +52,15 @@ export function MessageTreeProvider({ children }: MessageTreeProviderProps) {
   // Subscribe to query cache changes for the specific chat messages query
   useEffect(() => {
     // TODO: IS this effect still needed or can it be replaced with a useQuery ?
-    if (type === "provisional" && pathname === "/") {
+    if (!isPersisted && pathname === "/") {
       // New chat
       setAllMessages([]);
       reset();
     }
 
-    const queryKey =
-      type === "shared"
-        ? trpc.chat.getPublicChatMessages.queryKey({ chatId: id })
-        : trpc.chat.getChatMessages.queryKey({ chatId: id });
+    const queryKey = isShared
+      ? trpc.chat.getPublicChatMessages.queryKey({ chatId: id })
+      : trpc.chat.getChatMessages.queryKey({ chatId: id });
 
     // Get initial data
     const initialData = queryClient.getQueryData<ChatMessage[]>(queryKey);
@@ -79,10 +80,9 @@ export function MessageTreeProvider({ children }: MessageTreeProviderProps) {
       }
 
       const eventQueryKey = event.query.queryKey;
-      const currentQueryKey =
-        type === "shared"
-          ? trpc.chat.getPublicChatMessages.queryKey({ chatId: id })
-          : trpc.chat.getChatMessages.queryKey({ chatId: id });
+      const currentQueryKey = isShared
+        ? trpc.chat.getPublicChatMessages.queryKey({ chatId: id })
+        : trpc.chat.getChatMessages.queryKey({ chatId: id });
 
       if (JSON.stringify(eventQueryKey) === JSON.stringify(currentQueryKey)) {
         const newData = event.query.state.data as ChatMessage[] | undefined;
@@ -100,7 +100,8 @@ export function MessageTreeProvider({ children }: MessageTreeProviderProps) {
     return unsubscribe;
   }, [
     id,
-    type,
+    isPersisted,
+    isShared,
     pathname,
     trpc.chat.getChatMessages,
     trpc.chat.getPublicChatMessages,

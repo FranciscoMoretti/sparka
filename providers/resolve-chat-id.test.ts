@@ -5,7 +5,7 @@ const PROVISIONAL_ID = "provisional-uuid-123";
 
 describe("resolveChatId", () => {
   describe("shared routes (/share/:id)", () => {
-    it("returns shared type for /share/:id", () => {
+    it("returns chat for /share/:id", () => {
       expect(
         resolveChatId({
           pathname: "/share/abc-123",
@@ -13,8 +13,8 @@ describe("resolveChatId", () => {
         })
       ).toEqual({
         id: "abc-123",
-        type: "shared",
-        shouldRefreshProvisionalId: false,
+        type: "chat",
+        isPersisted: true,
       });
     });
 
@@ -26,8 +26,8 @@ describe("resolveChatId", () => {
         })
       ).toEqual({
         id: "abc-123-def-456",
-        type: "shared",
-        shouldRefreshProvisionalId: false,
+        type: "chat",
+        isPersisted: true,
       });
     });
   });
@@ -42,7 +42,7 @@ describe("resolveChatId", () => {
       ).toEqual({
         id: PROVISIONAL_ID,
         type: "provisional",
-        shouldRefreshProvisionalId: false,
+        isPersisted: false,
       });
     });
 
@@ -55,20 +55,7 @@ describe("resolveChatId", () => {
       ).toEqual({
         id: "chat-456",
         type: "chat",
-        shouldRefreshProvisionalId: false,
-      });
-    });
-
-    it("signals refresh when project chat id matches provisional id", () => {
-      expect(
-        resolveChatId({
-          pathname: `/project/proj-123/chat/${PROVISIONAL_ID}`,
-          provisionalId: PROVISIONAL_ID,
-        })
-      ).toEqual({
-        id: PROVISIONAL_ID,
-        type: "chat",
-        shouldRefreshProvisionalId: true,
+        isPersisted: true,
       });
     });
   });
@@ -83,20 +70,7 @@ describe("resolveChatId", () => {
       ).toEqual({
         id: "chat-789",
         type: "chat",
-        shouldRefreshProvisionalId: false,
-      });
-    });
-
-    it("signals refresh when chat id matches provisional id (chat was persisted)", () => {
-      expect(
-        resolveChatId({
-          pathname: `/chat/${PROVISIONAL_ID}`,
-          provisionalId: PROVISIONAL_ID,
-        })
-      ).toEqual({
-        id: PROVISIONAL_ID,
-        type: "chat",
-        shouldRefreshProvisionalId: true,
+        isPersisted: true,
       });
     });
   });
@@ -108,7 +82,7 @@ describe("resolveChatId", () => {
       ).toEqual({
         id: PROVISIONAL_ID,
         type: "provisional",
-        shouldRefreshProvisionalId: false,
+        isPersisted: false,
       });
     });
 
@@ -118,7 +92,7 @@ describe("resolveChatId", () => {
       ).toEqual({
         id: PROVISIONAL_ID,
         type: "provisional",
-        shouldRefreshProvisionalId: false,
+        isPersisted: false,
       });
     });
 
@@ -131,7 +105,7 @@ describe("resolveChatId", () => {
       ).toEqual({
         id: PROVISIONAL_ID,
         type: "provisional",
-        shouldRefreshProvisionalId: false,
+        isPersisted: false,
       });
     });
   });

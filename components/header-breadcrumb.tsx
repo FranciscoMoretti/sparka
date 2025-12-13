@@ -1,5 +1,4 @@
 "use client";
-import { useMessageIds } from "@ai-sdk-tools/store";
 import { ChevronDown } from "lucide-react";
 import { type KeyboardEvent, memo, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -25,6 +24,7 @@ import {
   useProject,
   useRenameChat,
 } from "@/hooks/chat-sync-hooks";
+import { useIsSharedRoute } from "@/hooks/use-is-shared-route";
 import { usePublicChat } from "@/hooks/use-shared-chat";
 import type { Session } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -45,16 +45,15 @@ export function HeaderBreadcrumb({
   isReadonly,
   className,
 }: HeaderBreadcrumbProps) {
-  const { type, id: chatId } = useChatId();
-  const messageIds = useMessageIds();
+  const { id: chatId, isPersisted } = useChatId();
+  const isShared = useIsSharedRoute();
   const isAuthenticated = !!user;
 
-  const provisionalChatSaved = type === "provisional" && messageIds.length >= 2;
   const { data: chat } = useGetChatById(chatId, {
-    enabled: type === "chat" || provisionalChatSaved,
+    enabled: !isShared && isPersisted,
   });
   const { data: publicChat } = usePublicChat(chatId, {
-    enabled: type === "shared",
+    enabled: isShared,
   });
 
   const resolvedProjectId = chat?.projectId ?? publicChat?.projectId ?? null;
@@ -84,7 +83,7 @@ export function HeaderBreadcrumb({
     value: chat?.title,
   });
 
-  if (!chat) {
+  if (!(chat || publicChat)) {
     return null;
   }
 

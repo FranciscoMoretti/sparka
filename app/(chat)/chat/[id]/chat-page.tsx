@@ -1,60 +1,22 @@
 "use client";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { notFound, redirect } from "next/navigation";
-import { useMemo } from "react";
 import { ChatSystem } from "@/components/chat-system";
 import {
   useGetChatByIdQueryOptions,
   useGetChatMessagesQueryOptions,
 } from "@/hooks/chat-sync-hooks";
-import type { UiToolName } from "@/lib/ai/types";
-import { getDefaultThread } from "@/lib/thread-utils";
+import { useChatSystemInitialState } from "@/hooks/use-chat-system-initial-state";
+import { useChatId } from "@/providers/chat-id-provider";
 import { useSession } from "@/providers/session-provider";
 
-export function ChatPage({ id }: { id: string }) {
-  const { data: session } = useSession();
-
-  // Anonymous users can't access specific chat pages
-  if (!session?.user) {
-    redirect("/");
-  }
-
-  const getChatByIdQueryOptions = useGetChatByIdQueryOptions(id);
+function ChatPageContent({ chatId }: { chatId: string }) {
+  const getChatByIdQueryOptions = useGetChatByIdQueryOptions(chatId);
   const { data: chat } = useSuspenseQuery(getChatByIdQueryOptions);
   const getMessagesByChatIdQueryOptions = useGetChatMessagesQueryOptions();
   const { data: messages } = useSuspenseQuery(getMessagesByChatIdQueryOptions);
 
-  const initialThreadMessages = useMemo(() => {
-    if (!messages) {
-      return [];
-    }
-    return getDefaultThread(
-      messages.map((msg) => ({ ...msg, id: msg.id.toString() }))
-    );
-  }, [messages]);
-
-  const initialTool = useMemo<UiToolName | null>(() => {
-    const lastAssistantMessage = messages?.findLast(
-      (m) => m.role === "assistant"
-    );
-    if (!(lastAssistantMessage && Array.isArray(lastAssistantMessage.parts))) {
-      return null;
-    }
-    for (const part of lastAssistantMessage.parts) {
-      if (
-        part?.type === "tool-deepResearch" &&
-        part?.state === "output-available" &&
-        part?.output?.format === "clarifying_questions"
-      ) {
-        return "deepResearch";
-      }
-    }
-    return null;
-  }, [messages]);
-
-  if (!id) {
-    return notFound();
-  }
+  const { initialMessages, initialTool } = useChatSystemInitialState(messages);
 
   if (!chat) {
     return notFound();
@@ -63,9 +25,25 @@ export function ChatPage({ id }: { id: string }) {
   return (
     <ChatSystem
       id={chat.id}
-      initialMessages={initialThreadMessages}
+      initialMessages={initialMessages}
       initialTool={initialTool}
       isReadonly={false}
     />
   );
+}
+
+export function ChatPage() {
+  const { id, isPersisted } = useChatId();
+  const { data: session, isPending } = useSession();
+
+  // Anonymous users can't access persisted chat pages
+  if (isPersisted && !isPending && !session?.user) {
+    redirect("/");
+  }
+
+  if (!isPersisted) {
+    return notFound();
+  }
+
+  return <ChatPageContent chatId={id} />;
 }

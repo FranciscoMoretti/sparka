@@ -1,5 +1,5 @@
-import { ChatPageRouter } from "./chat-page-router";
+import { ChatHome } from "./chat-home";
 
 export default function HomePage() {
-  return <ChatPageRouter />;
+  return <ChatHome />;
 }
