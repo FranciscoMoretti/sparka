@@ -53,3 +53,13 @@ evals/db/
 
 # Neon
 .neon
+
+# START Skiller Generated Files
+/.claude/skills
+/.cursor/rules
+/.skillz
+/AGENTS.md
+/AGENTS.md.bak
+/CLAUDE.md
+/CLAUDE.md.bak
+# END Skiller Generated Files

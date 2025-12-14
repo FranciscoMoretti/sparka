@@ -1,6 +1,6 @@
 ---
 description: React rules for the project
-globs: *.tsx
+globs: '**/*.tsx'
 alwaysApply: false
 ---
 
