@@ -10,12 +10,19 @@ default_agents = ["cursor", "claude"]
 # NOTE: disabled because nested mode has a bug that doesn't pass skillerDir to CursorAgent
 nested = false
 
+
+# --- Global .gitignore Configuration ---
+[gitignore]
+# Enable/disable automatic .gitignore updates (default: true)
+enabled = false
+
+[rules]
+merge_strategy = "cursor"
+
 # --- Agent Specific Configurations ---
 # You can enable/disable agents and override their default output paths here.
 # Use lowercase agent identifiers: amp, copilot, claude, codex, cursor, windsurf, cline, aider, kilocode
 
-[rules]
-merge_strategy = "cursor"
 
 [agents.cursor]
 enabled = true
