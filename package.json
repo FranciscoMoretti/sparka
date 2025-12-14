@@ -5,7 +5,7 @@
   "license": "Apache-2.0",
   "scripts": {
     "prebuild": "",
-    "dev": "bash scripts/with-db.sh next dev",
+    "dev": "skiller:apply && bash scripts/with-db.sh next dev",
     "build": "tsx lib/db/migrate && next build",
     "start": "next start",
     "prod": "bun run build && bun run start",
@@ -29,6 +29,7 @@
     "db:branch:list": "bunx neonctl branches list",
     "eval:dev": "evalite watch",
     "eval:serve": "evalite serve",
+    "skiller:apply": "skiller apply",
     "test": "bun test:playwright && bun test:unit",
     "test:playwright": "export PLAYWRIGHT=True && bunx playwright test --workers=4",
     "test:unit": "vitest run",
