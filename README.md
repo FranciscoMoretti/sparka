@@ -4,6 +4,9 @@
 
 # Production-Ready AI Chat Template
 
+[![Run in Smithery](https://smithery.ai/badge/skills/franciscomoretti)](https://smithery.ai/skills?ns=franciscomoretti&utm_source=github&utm_medium=badge)
+
+
 Build your own multi-model AI chat app with 120+ models, authentication, streaming, and advanced features.
 
 **Next.js • Vercel AI SDK • Shadcn/UI • Better Auth • Drizzle ORM**
