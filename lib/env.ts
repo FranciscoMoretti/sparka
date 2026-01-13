@@ -48,13 +48,30 @@ export const env = createEnv({
 
 type ValidationError = { feature: string; missing: string[] };
 
+function isEdgeRuntime(): boolean {
+  return (
+    typeof process !== "undefined" && process.env?.NEXT_RUNTIME === "edge"
+  );
+}
+
 /**
  * Validates that enabled features in siteConfig have their required env vars.
  * Call at server startup (instrumentation.ts).
  * Throws in production, warns in development.
  */
 export function validateConfig(): void {
+  // Next middleware runs in the edge runtime where not all server env vars exist.
+  if (isEdgeRuntime()) return;
+
   const errors: ValidationError[] = [];
+
+  // Validate AI Gateway access (required for live model discovery + providers)
+  if (!(env.AI_GATEWAY_API_KEY || env.VERCEL_OIDC_TOKEN)) {
+    errors.push({
+      feature: "aiGateway",
+      missing: ["AI_GATEWAY_API_KEY or VERCEL_OIDC_TOKEN"],
+    });
+  }
 
   // Validate integrations
   if (
