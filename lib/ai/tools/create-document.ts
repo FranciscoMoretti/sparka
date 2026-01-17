@@ -6,32 +6,31 @@ import type { ToolSession } from "@/lib/ai/tools/types";
 import type { ArtifactKind } from "@/lib/artifacts/artifact-kind";
 import { artifactKinds } from "@/lib/artifacts/artifact-kind";
 import {
-  type DocumentHandler,
+  type CreateDocumentCallbackProps,
   documentHandlersByArtifactKind,
 } from "@/lib/artifacts/server";
 
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
+import { saveDocument } from "@/lib/db/queries";
 import { generateUUID } from "@/lib/utils";
 import type { StreamWriter } from "../types";
 import type { ArtifactToolResult } from "./artifact-tool-result";
 
-type CreateDocumentProps = {
-  session: ToolSession;
-  dataStream: StreamWriter;
-  contextForLLM?: ModelMessage[];
-  messageId: string;
-  selectedModel: ModelId;
-  costAccumulator?: CostAccumulator;
-};
-
-export const createDocumentTool = ({
+export const getCreateDocumentTool = ({
   session,
   dataStream,
   contextForLLM,
   messageId,
   selectedModel,
   costAccumulator,
-}: CreateDocumentProps) =>
+}: {
+  session: ToolSession;
+  dataStream: StreamWriter;
+  contextForLLM?: ModelMessage[];
+  messageId: string;
+  selectedModel: ModelId;
+  costAccumulator?: CostAccumulator;
+}) =>
   tool({
     description: `Create a persistent document (text, code, or spreadsheet).  This tool orchestrates the downstream handlers that actually generate the file based on the provided title, kind and description.
 
@@ -95,98 +94,110 @@ Avoid:
         throw new Error(`No document handler found for kind: ${kind}`);
       }
 
-      const result: ArtifactToolResult = await createDocument({
-        dataStream,
-        kind,
-        title,
-        description,
-        session,
-        prompt,
-        messageId,
-        selectedModel,
-        documentHandler,
-        costAccumulator,
-      });
+      const { result } = await createDocument(
+        {
+          dataStream,
+          session,
+          messageId,
+          selectedModel,
+          costAccumulator,
+        },
+        {
+          kind,
+          title,
+          description,
+          prompt,
+          generate: documentHandler.generate,
+        }
+      );
 
       return result;
     },
   });
 
-export async function createDocument({
-  dataStream,
-  kind,
-  title,
-  description,
-  session,
-  prompt,
-  messageId,
-  selectedModel,
-  documentHandler,
-  costAccumulator,
-}: {
-  dataStream: StreamWriter;
-  kind: ArtifactKind;
-  title: string;
-  description: string;
-  session: ToolSession;
-  prompt: string;
-  messageId: string;
-  selectedModel: ModelId;
-  documentHandler: DocumentHandler<ArtifactKind>;
-  costAccumulator?: CostAccumulator;
-}): Promise<ArtifactToolResult> {
+export async function createDocument(
+  context: {
+    dataStream: StreamWriter;
+    session: ToolSession;
+    messageId: string;
+    selectedModel: ModelId;
+    costAccumulator?: CostAccumulator;
+  },
+  input: {
+    kind: ArtifactKind;
+    title: string;
+    description: string;
+    prompt: string;
+    generate: (args: CreateDocumentCallbackProps) => Promise<string>;
+  }
+): Promise<{ result: ArtifactToolResult; content: string }> {
   const id = generateUUID();
 
-  dataStream.write({
+  context.dataStream.write({
     type: "data-kind",
-    data: kind,
+    data: input.kind,
     transient: true,
   });
 
-  dataStream.write({
+  context.dataStream.write({
     type: "data-id",
     data: id,
     transient: true,
   });
 
-  dataStream.write({
+  context.dataStream.write({
     type: "data-messageId",
-    data: messageId,
+    data: context.messageId,
     transient: true,
   });
 
-  dataStream.write({
+  context.dataStream.write({
     type: "data-title",
-    data: title,
+    data: input.title,
     transient: true,
   });
 
-  dataStream.write({
+  context.dataStream.write({
     type: "data-clear",
     data: null,
     transient: true,
   });
 
-  await documentHandler.onCreateDocument({
+  const content = await input.generate({
     id,
-    title,
-    description,
-    dataStream,
-    session,
-    prompt,
-    messageId,
-    selectedModel,
-    costAccumulator,
+    title: input.title,
+    description: input.description,
+    dataStream: context.dataStream,
+    session: context.session,
+    prompt: input.prompt,
+    messageId: context.messageId,
+    selectedModel: context.selectedModel,
+    costAccumulator: context.costAccumulator,
   });
 
-  dataStream.write({ type: "data-finish", data: null, transient: true });
+  if (context.session?.user?.id) {
+    await saveDocument({
+      id,
+      title: input.title,
+      content,
+      kind: input.kind,
+      userId: context.session.user.id,
+      messageId: context.messageId,
+    });
+  }
+
+  context.dataStream.write({
+    type: "data-finish",
+    data: null,
+    transient: true,
+  });
 
   const result: ArtifactToolResult = {
     id,
-    title,
-    kind,
+    title: input.title,
+    kind: input.kind,
     content: "A document was created and is now visible to the user.",
   };
 
-  return result;
+  return { result, content };
 }

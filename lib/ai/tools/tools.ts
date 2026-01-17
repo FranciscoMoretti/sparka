@@ -3,7 +3,7 @@ import { DEFAULT_IMAGE_MODEL, type ModelId } from "@/lib/ai/app-models";
 import { getOrCreateMcpClient, type MCPClient } from "@/lib/ai/mcp/mcp-client";
 import { createToolId } from "@/lib/ai/mcp-name-id";
 import { codeInterpreter } from "@/lib/ai/tools/code-interpreter";
-import { createDocumentTool } from "@/lib/ai/tools/create-document";
+import { getCreateDocumentTool } from "@/lib/ai/tools/create-document";
 import { generateImageTool } from "@/lib/ai/tools/generate-image";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { readDocument } from "@/lib/ai/tools/read-document";
@@ -44,7 +44,7 @@ export function getTools({
 }) {
   return {
     getWeather,
-    createDocument: createDocumentTool({
+    createDocument: getCreateDocumentTool({
       session,
       dataStream,
       contextForLLM,

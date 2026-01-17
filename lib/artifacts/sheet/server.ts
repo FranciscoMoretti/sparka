@@ -7,7 +7,7 @@ import { createDocumentHandler } from "@/lib/artifacts/server";
 
 export const sheetDocumentHandler = createDocumentHandler<"sheet">({
   kind: "sheet",
-  onCreateDocument: async ({
+  generate: async ({
     title: _title,
     description: _description,
     dataStream,
@@ -58,7 +58,7 @@ export const sheetDocumentHandler = createDocumentHandler<"sheet">({
 
     return draftContent;
   },
-  onUpdateDocument: async ({
+  update: async ({
     document,
     description,
     dataStream,

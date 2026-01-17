@@ -17,7 +17,7 @@ import type { tavilyWebSearch } from "@/lib/ai/tools/web-search";
 import type { Suggestion } from "@/lib/db/schema";
 import type { ArtifactKind } from "../artifacts/artifact-kind";
 import type { AppModelId } from "./app-models";
-import type { createDocumentTool as createDocument } from "./tools/create-document";
+import type { getCreateDocumentTool as createDocument } from "./tools/create-document";
 import type { ResearchUpdate } from "./tools/research-updates-schema";
 
 export const toolNameSchema = z.enum([

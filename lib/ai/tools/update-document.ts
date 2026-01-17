@@ -5,16 +5,8 @@ import type { ToolSession } from "@/lib/ai/tools/types";
 import { documentHandlersByArtifactKind } from "@/lib/artifacts/server";
 
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
-import { getDocumentById } from "@/lib/db/queries";
+import { getDocumentById, saveDocument } from "@/lib/db/queries";
 import type { StreamWriter } from "../types";
-
-type UpdateDocumentProps = {
-  session: ToolSession;
-  dataStream: StreamWriter;
-  messageId: string;
-  selectedModel: ModelId;
-  costAccumulator?: CostAccumulator;
-};
 
 export const updateDocument = ({
   session,
@@ -22,7 +14,13 @@ export const updateDocument = ({
   messageId,
   selectedModel,
   costAccumulator,
-}: UpdateDocumentProps) =>
+}: {
+  session: ToolSession;
+  dataStream: StreamWriter;
+  messageId: string;
+  selectedModel: ModelId;
+  costAccumulator?: CostAccumulator;
+}) =>
   tool({
     description: `Modify an existing document.
 
@@ -80,7 +78,7 @@ Avoid:
         throw new Error(`No document handler found for kind: ${document.kind}`);
       }
 
-      await documentHandler.onUpdateDocument({
+      const content = await documentHandler.update({
         document,
         description,
         dataStream,
@@ -89,6 +87,17 @@ Avoid:
         selectedModel,
         costAccumulator,
       });
+
+      if (session?.user?.id) {
+        await saveDocument({
+          id: document.id,
+          title: document.title,
+          content,
+          kind: document.kind,
+          userId: session.user.id,
+          messageId,
+        });
+      }
 
       dataStream.write({ type: "data-finish", data: null, transient: true });
 

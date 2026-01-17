@@ -6,7 +6,7 @@ import { createDocumentHandler } from "@/lib/artifacts/server";
 
 export const textDocumentHandler = createDocumentHandler<"text">({
   kind: "text",
-  onCreateDocument: async ({
+  generate: async ({
     title: _title,
     description: _description,
     dataStream,
@@ -52,7 +52,7 @@ export const textDocumentHandler = createDocumentHandler<"text">({
 
     return draftContent;
   },
-  onUpdateDocument: async ({
+  update: async ({
     document,
     description,
     dataStream,
