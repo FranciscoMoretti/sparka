@@ -1,6 +1,6 @@
-import { streamText } from "ai";
-import type { AppModelId, ModelId } from "@/lib/ai/app-models";
+import type { ModelId } from "@/lib/ai/app-models";
 import { getLanguageModel } from "@/lib/ai/providers";
+import { streamTextArtifact } from "@/lib/artifacts/text/stream-text-artifact";
 import { truncateMessages } from "@/lib/ai/token-utils";
 import type { ToolSession } from "@/lib/ai/tools/types";
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
@@ -86,49 +86,28 @@ export async function finalReportGeneration(
       title: reportTitle,
       description: "",
       prompt: finalReportPromptText,
-      generate: async ({
-        dataStream: stream,
-        costAccumulator: accumulator,
-      }) => {
-        let draftContent = "";
-        const streamResult = streamText({
-          model,
-          messages: truncatedFinalMessages,
-          maxOutputTokens: config.final_report_model_max_tokens,
-          experimental_telemetry: {
-            isEnabled: true,
-            functionId: "finalReportGeneration",
-            metadata: {
-              messageId,
-              langfuseTraceId: state.requestId,
-              langfuseUpdateParent: false,
+      generate: async ({ dataStream: stream, costAccumulator: accumulator }) =>
+        streamTextArtifact({
+          dataStream: stream,
+          costAccumulator: accumulator,
+          costModelId: config.final_report_model,
+          costEvent: "deep-research-final-report",
+          streamTextParams: {
+            model,
+            messages: truncatedFinalMessages,
+            maxOutputTokens: config.final_report_model_max_tokens,
+            experimental_telemetry: {
+              isEnabled: true,
+              functionId: "finalReportGeneration",
+              metadata: {
+                messageId,
+                langfuseTraceId: state.requestId,
+                langfuseUpdateParent: false,
+              },
             },
+            maxRetries: 3,
           },
-          maxRetries: 3,
-        });
-
-        for await (const delta of streamResult.fullStream) {
-          if (delta.type === "text-delta") {
-            draftContent += delta.text;
-            stream.write({
-              type: "data-textDelta",
-              data: delta.text,
-              transient: true,
-            });
-          }
-        }
-
-        const usage = await streamResult.usage;
-        if (usage) {
-          accumulator?.addLLMCost(
-            config.final_report_model as AppModelId,
-            usage,
-            "deep-research-final-report"
-          );
-        }
-
-        return draftContent;
-      },
+        }),
     }
   );
 
