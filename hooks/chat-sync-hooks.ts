@@ -414,7 +414,6 @@ export function useSetVisibility() {
 }
 
 export function useSaveDocument(
-  _documentId: string,
   messageId: string,
   options?: {
     onSettled?: (result: unknown, error: unknown, params: unknown) => void;

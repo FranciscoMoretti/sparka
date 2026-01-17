@@ -23,10 +23,7 @@ export const VersionFooter = ({
   const { width } = useWindowSize();
   const isMobile = width < 768;
 
-  const saveDocumentMutation = useSaveDocument(
-    artifact.documentId,
-    artifact.messageId
-  );
+  const saveDocumentMutation = useSaveDocument(artifact.messageId);
 
   if (!documents) {
     return;

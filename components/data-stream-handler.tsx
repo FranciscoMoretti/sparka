@@ -152,10 +152,7 @@ export function DataStreamHandler({ id }: { id: string }) {
   const { setSelectedTool } = useChatInput();
 
   const { confirmChatId } = useChatId();
-  const saveDocumentMutation = useSaveDocument(
-    artifact.documentId,
-    artifact.messageId
-  );
+  const saveDocumentMutation = useSaveDocument(artifact.messageId);
   const isAuthenticated = !!session;
 
   useEffect(() => {

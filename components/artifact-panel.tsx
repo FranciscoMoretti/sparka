@@ -101,15 +101,11 @@ function PureArtifactPanel({
 
   const [isContentDirty, setIsContentDirty] = useState(false);
 
-  const saveDocumentMutation = useSaveDocument(
-    artifact.documentId,
-    artifact.messageId,
-    {
-      onSettled: () => {
-        setIsContentDirty(false);
-      },
-    }
-  );
+  const saveDocumentMutation = useSaveDocument(artifact.messageId, {
+    onSettled: () => {
+      setIsContentDirty(false);
+    },
+  });
 
   const artifactDefinition = artifactDefinitions.find(
     (definition) => definition.kind === artifact.kind
