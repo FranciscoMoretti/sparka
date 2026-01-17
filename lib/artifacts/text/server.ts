@@ -1,19 +1,12 @@
 import { smoothStream } from "ai";
 import { updateDocumentPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
-import { streamTextArtifact } from "@/lib/artifacts/text/stream-text-artifact";
 import { createDocumentHandler } from "@/lib/artifacts/server";
+import { streamTextArtifact } from "@/lib/artifacts/text/stream-text-artifact";
 
 export const textDocumentHandler = createDocumentHandler<"text">({
   kind: "text",
-  generate: async ({
-    title: _title,
-    description: _description,
-    dataStream,
-    prompt,
-    selectedModel,
-    costAccumulator,
-  }) =>
+  generate: async ({ dataStream, prompt, selectedModel, costAccumulator }) =>
     streamTextArtifact({
       dataStream,
       costAccumulator,

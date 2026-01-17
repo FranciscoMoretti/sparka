@@ -1,8 +1,8 @@
 import type { ModelId } from "@/lib/ai/app-models";
 import { getLanguageModel } from "@/lib/ai/providers";
-import { streamTextArtifact } from "@/lib/artifacts/text/stream-text-artifact";
 import { truncateMessages } from "@/lib/ai/token-utils";
 import type { ToolSession } from "@/lib/ai/tools/types";
+import { streamTextArtifact } from "@/lib/artifacts/text/stream-text-artifact";
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
 import { generateUUID } from "@/lib/utils";
 import type { StreamWriter } from "../../types";

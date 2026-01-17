@@ -82,8 +82,6 @@ Avoid:
         document,
         description,
         dataStream,
-        session,
-        messageId,
         selectedModel,
         costAccumulator,
       });

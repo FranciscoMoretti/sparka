@@ -5,14 +5,7 @@ import { createDocumentHandler } from "@/lib/artifacts/server";
 
 export const codeDocumentHandler = createDocumentHandler<"code">({
   kind: "code",
-  generate: async ({
-    title: _title,
-    description: _description,
-    dataStream,
-    prompt,
-    selectedModel,
-    costAccumulator,
-  }) =>
+  generate: async ({ dataStream, prompt, selectedModel, costAccumulator }) =>
     streamCodeArtifact({
       dataStream,
       costAccumulator,

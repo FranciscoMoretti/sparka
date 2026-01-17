@@ -5,14 +5,7 @@ import { streamSheetArtifact } from "@/lib/artifacts/sheet/stream-sheet-artifact
 
 export const sheetDocumentHandler = createDocumentHandler<"sheet">({
   kind: "sheet",
-  generate: async ({
-    title: _title,
-    description: _description,
-    dataStream,
-    prompt,
-    selectedModel,
-    costAccumulator,
-  }) =>
+  generate: async ({ dataStream, prompt, selectedModel, costAccumulator }) =>
     streamSheetArtifact({
       dataStream,
       costAccumulator,

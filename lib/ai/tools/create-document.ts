@@ -164,13 +164,8 @@ export async function createDocument(
   });
 
   const content = await input.generate({
-    id,
-    title: input.title,
-    description: input.description,
     dataStream: context.dataStream,
-    session: context.session,
     prompt: input.prompt,
-    messageId: context.messageId,
     selectedModel: context.selectedModel,
     costAccumulator: context.costAccumulator,
   });
