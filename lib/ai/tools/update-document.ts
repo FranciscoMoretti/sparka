@@ -37,11 +37,11 @@ Avoid:
 `,
     inputSchema: z.object({
       id: z.string().describe("The ID of the document to update"),
-      description: z
+      prompt: z
         .string()
-        .describe("The description of changes that need to be made"),
+        .describe("The prompt for the changes that need to be made"),
     }),
-    execute: async ({ id, description }) => {
+    execute: async ({ id, prompt }) => {
       const document = await getDocumentById({ id });
 
       if (!document) {
@@ -80,7 +80,7 @@ Avoid:
 
       const content = await documentHandler.update({
         document,
-        description,
+        prompt,
         dataStream,
         selectedModel,
         costAccumulator,

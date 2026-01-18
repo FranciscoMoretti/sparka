@@ -20,7 +20,7 @@ export const sheetDocumentHandler = createDocumentHandler<"sheet">({
     }),
   update: async ({
     document,
-    description,
+    prompt,
     dataStream,
     selectedModel,
     costAccumulator,
@@ -34,7 +34,7 @@ export const sheetDocumentHandler = createDocumentHandler<"sheet">({
         model: await getLanguageModel(selectedModel),
         system: updateDocumentPrompt(document.content, "sheet"),
         experimental_telemetry: { isEnabled: true },
-        prompt: description,
+        prompt,
       },
     }),
 });

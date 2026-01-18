@@ -16,7 +16,7 @@ export type CreateDocumentCallbackProps = {
 
 export type UpdateDocumentCallbackProps = {
   document: Document;
-  description: string;
+  prompt: string;
   dataStream: StreamWriter;
   selectedModel: ModelId;
   costAccumulator?: CostAccumulator;

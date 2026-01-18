@@ -20,7 +20,7 @@ export const codeDocumentHandler = createDocumentHandler<"code">({
     }),
   update: async ({
     document,
-    description,
+    prompt,
     dataStream,
     selectedModel,
     costAccumulator,
@@ -34,7 +34,7 @@ export const codeDocumentHandler = createDocumentHandler<"code">({
         model: await getLanguageModel(selectedModel),
         system: updateDocumentPrompt(document.content || "", "code"),
         experimental_telemetry: { isEnabled: true },
-        prompt: description,
+        prompt,
       },
     }),
 });

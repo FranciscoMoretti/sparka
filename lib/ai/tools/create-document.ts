@@ -191,7 +191,7 @@ export async function createDocument(
     id,
     title: input.title,
     kind: input.kind,
-    content: "A document was created and is now visible to the user.",
+    content: "The document has been created successfully.",
   };
 
   return { result, content };

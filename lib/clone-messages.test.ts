@@ -131,7 +131,7 @@ describe("cloneMessagesWithDocuments", () => {
         state: "output-available",
         input: {
           id: "doc-1",
-          description: "desc",
+          prompt: "desc",
         },
         output: {
           id: "doc-1",

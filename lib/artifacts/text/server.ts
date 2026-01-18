@@ -25,7 +25,7 @@ export const textDocumentHandler = createDocumentHandler<"text">({
     }),
   update: async ({
     document,
-    description,
+    prompt,
     dataStream,
     selectedModel,
     costAccumulator,
@@ -39,7 +39,7 @@ export const textDocumentHandler = createDocumentHandler<"text">({
         model: await getLanguageModel(selectedModel),
         system: updateDocumentPrompt(document.content, "text"),
         experimental_transform: smoothStream({ chunking: "word" }),
-        prompt: description,
+        prompt,
         experimental_telemetry: {
           isEnabled: true,
           functionId: "refine-text",
