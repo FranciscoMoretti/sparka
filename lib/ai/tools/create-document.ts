@@ -3,17 +3,20 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { ModelId } from "@/lib/ai/app-models";
 import type { ToolSession } from "@/lib/ai/tools/types";
+import type { StreamWriter } from "@/lib/ai/types";
 import type { ArtifactKind } from "@/lib/artifacts/artifact-kind";
 import { artifactKinds } from "@/lib/artifacts/artifact-kind";
 import {
   type CreateDocumentCallbackProps,
   documentHandlersByArtifactKind,
 } from "@/lib/artifacts/server";
-
+import type {
+  ArtifactInfo,
+  ArtifactMessageStreamWriter,
+} from "@/lib/artifacts/types";
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
 import { saveDocument } from "@/lib/db/queries";
 import { generateUUID } from "@/lib/utils";
-import type { StreamWriter } from "../types";
 import type { ArtifactToolResult } from "./artifact-tool-result";
 
 export const getCreateDocumentTool = ({
@@ -85,75 +88,97 @@ Avoid:
       `;
       }
 
-      const documentHandler = documentHandlersByArtifactKind.find(
-        (documentHandlerByArtifactKind) =>
-          documentHandlerByArtifactKind.kind === kind
-      );
-
-      if (!documentHandler) {
-        throw new Error(`No document handler found for kind: ${kind}`);
+      if (kind === "text") {
+        return (
+          await createDocument(
+            {
+              dataStream,
+              session,
+              messageId,
+              selectedModel,
+              costAccumulator,
+            },
+            {
+              kind,
+              title,
+              description,
+              prompt,
+              generate: documentHandlersByArtifactKind.text.generate,
+            }
+          )
+        ).result;
       }
 
-      const { result } = await createDocument(
-        {
-          dataStream,
-          session,
-          messageId,
-          selectedModel,
-          costAccumulator,
-        },
-        {
-          kind,
-          title,
-          description,
-          prompt,
-          generate: documentHandler.generate,
-        }
-      );
+      if (kind === "code") {
+        return (
+          await createDocument(
+            {
+              dataStream,
+              session,
+              messageId,
+              selectedModel,
+              costAccumulator,
+            },
+            {
+              kind,
+              title,
+              description,
+              prompt,
+              generate: documentHandlersByArtifactKind.code.generate,
+            }
+          )
+        ).result;
+      }
 
-      return result;
+      return (
+        await createDocument(
+          {
+            dataStream,
+            session,
+            messageId,
+            selectedModel,
+            costAccumulator,
+          },
+          {
+            kind,
+            title,
+            description,
+            prompt,
+            generate: documentHandlersByArtifactKind.sheet.generate,
+          }
+        )
+      ).result;
     },
   });
 
-export async function createDocument(
+export async function createDocument<K extends ArtifactKind>(
   context: {
-    dataStream: StreamWriter;
+    dataStream: ArtifactMessageStreamWriter<K>;
     session: ToolSession;
     messageId: string;
     selectedModel: ModelId;
     costAccumulator?: CostAccumulator;
   },
   input: {
-    kind: ArtifactKind;
+    kind: K;
     title: string;
     description: string;
     prompt: string;
-    generate: (args: CreateDocumentCallbackProps) => Promise<string>;
+    generate: (args: CreateDocumentCallbackProps<K>) => Promise<string>;
   }
 ): Promise<{ result: ArtifactToolResult; content: string }> {
   const id = generateUUID();
 
-  context.dataStream.write({
-    type: "data-kind",
-    data: input.kind,
-    transient: true,
-  });
+  const artifactInfo: ArtifactInfo = {
+    id,
+    title: input.title,
+    messageId: context.messageId,
+    kind: input.kind,
+  };
 
   context.dataStream.write({
-    type: "data-id",
-    data: id,
-    transient: true,
-  });
-
-  context.dataStream.write({
-    type: "data-messageId",
-    data: context.messageId,
-    transient: true,
-  });
-
-  context.dataStream.write({
-    type: "data-title",
-    data: input.title,
+    type: "data-artifactInfo",
+    data: artifactInfo,
     transient: true,
   });
 

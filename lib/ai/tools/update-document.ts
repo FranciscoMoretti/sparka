@@ -2,7 +2,9 @@ import { tool } from "ai";
 import { z } from "zod";
 import type { ModelId } from "@/lib/ai/app-models";
 import type { ToolSession } from "@/lib/ai/tools/types";
+import type { ArtifactKind } from "@/lib/artifacts/artifact-kind";
 import { documentHandlersByArtifactKind } from "@/lib/artifacts/server";
+import type { ArtifactInfo } from "@/lib/artifacts/types";
 
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
 import { getDocumentById, saveDocument } from "@/lib/db/queries";
@@ -51,15 +53,16 @@ Avoid:
         };
       }
 
-      dataStream.write({
-        type: "data-id",
-        data: document.id,
-        transient: true,
-      });
+      const artifactInfo: ArtifactInfo = {
+        id: document.id,
+        title: document.title,
+        messageId,
+        kind: document.kind as ArtifactKind,
+      };
 
       dataStream.write({
-        type: "data-messageId",
-        data: messageId,
+        type: "data-artifactInfo",
+        data: artifactInfo,
         transient: true,
       });
 
@@ -69,10 +72,7 @@ Avoid:
         transient: true,
       });
 
-      const documentHandler = documentHandlersByArtifactKind.find(
-        (documentHandlerByArtifactKind) =>
-          documentHandlerByArtifactKind.kind === document.kind
-      );
+      const documentHandler = documentHandlersByArtifactKind[document.kind];
 
       if (!documentHandler) {
         throw new Error(`No document handler found for kind: ${document.kind}`);

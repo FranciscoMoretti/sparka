@@ -1,44 +1,10 @@
 import type { UIDataTypes, UIMessage, UIMessageStreamWriter } from "ai";
-import z from "zod";
+import type z from "zod";
+import type { ArtifactKind } from "./artifact-kind";
+import type { artifacts } from "./schemas";
 
 /**
 Create a union of the given object's values, and optionally specify which keys to get the values from.
-
-Please upvote [this issue](https://github.com/microsoft/TypeScript/issues/31438) if you want to have this type as a built-in in TypeScript.
-
-@example
-```
-// data.json
-{
-    'foo': 1,
-    'bar': 2,
-    'biz': 3
-}
-
-// main.ts
-import type {ValueOf} from 'type-fest';
-import data = require('./data.json');
-
-export function getData(name: string): ValueOf<typeof data> {
-    return data[name];
-}
-
-export function onlyBar(name: string): ValueOf<typeof data, 'bar'> {
-    return data[name];
-}
-
-// file.ts
-import {getData, onlyBar} from './main';
-
-getData('foo');
-//=> 1
-
-onlyBar('foo');
-//=> TypeError ...
-
-onlyBar('bar');
-//=> 2
-```
 * @see https://github.com/sindresorhus/type-fest/blob/main/source/value-of.d.ts
 */
 type ValueOf<
@@ -46,54 +12,22 @@ type ValueOf<
   ValueType extends keyof ObjectType = keyof ObjectType,
 > = ObjectType[ValueType];
 
-type StreamableArtifact<
-  CONTENT_SCHEMA extends z.ZodTypeAny,
-  DELTA_SCHEMA extends z.ZodTypeAny,
-> = {
-  contentSchema: CONTENT_SCHEMA;
-  deltaSchema: DELTA_SCHEMA;
-  reduceDelta: (
-    accumulator: z.infer<CONTENT_SCHEMA>,
-    delta: z.infer<DELTA_SCHEMA>
-  ) => z.infer<CONTENT_SCHEMA>;
-};
-
-const TextArtifact: StreamableArtifact<z.ZodString, z.ZodString> = {
-  contentSchema: z.string(),
-  deltaSchema: z.string(),
-  reduceDelta: (accumulator, delta) => accumulator + delta,
-};
-
-const CodeArtifact: StreamableArtifact<z.ZodString, z.ZodString> = {
-  contentSchema: z.string(),
-  deltaSchema: z.string(),
-  reduceDelta: (accumulator, delta) => accumulator + delta,
-};
-
-const SheetArtifact: StreamableArtifact<z.ZodString, z.ZodString> = {
-  contentSchema: z.string(),
-  deltaSchema: z.string(),
-  reduceDelta: (accumulator, delta) => accumulator + delta,
-};
-
 type UIArtifact = {
   content: unknown;
 };
 
-type ArtifactInfo = {
+export type ArtifactInfo = {
   id: string;
   title: string;
   messageId: string;
+  kind: ArtifactKind;
 };
 
-type ArtifactOutput<ARTIFACT extends UIArtifact> = ArtifactInfo & {
+type ArtifactOutput<ARTIFACT extends UIArtifact> = Omit<
+  ArtifactInfo,
+  "kind"
+> & {
   content: ARTIFACT["content"];
-};
-
-const artifacts = {
-  text: TextArtifact,
-  code: CodeArtifact,
-  sheet: SheetArtifact,
 };
 
 type ArtifactContentTypes = {
@@ -103,15 +37,20 @@ type ArtifactContentTypes = {
 };
 
 type ArtifactDeltaTypes = {
-  [K in keyof typeof artifacts as `${K}-delta`]: z.infer<
+  [K in keyof typeof artifacts as `${K}Delta`]: z.infer<
     (typeof artifacts)[K]["deltaSchema"]
   >;
 };
 
-export type ChatArtifactsUiDataTypes = ArtifactContentTypes &
-  ArtifactDeltaTypes & { "data-artifact-info": ArtifactInfo };
+export type CommonArtifactsUiDataTypes = {
+  artifactInfo: ArtifactInfo;
+  clear: null;
+  finish: null;
+};
 
-export type ArtifactKind = keyof typeof artifacts;
+export type ChatArtifactsUiDataTypes = ArtifactContentTypes &
+  ArtifactDeltaTypes &
+  CommonArtifactsUiDataTypes;
 
 type DataUIMessageChunk<DATA_TYPES extends UIDataTypes> = ValueOf<{
   [NAME in keyof DATA_TYPES & string]: {
@@ -122,26 +61,14 @@ type DataUIMessageChunk<DATA_TYPES extends UIDataTypes> = ValueOf<{
   };
 }>;
 
-type ArtifactMessageStreamWriter<
+export type ArtifactMessageStreamWriter<
   K extends ArtifactKind,
   UI_MESSAGE extends UIMessage = UIMessage,
 > = Omit<UIMessageStreamWriter<UI_MESSAGE>, "write"> & {
   write(
-    part: DataUIMessageChunk<
-      Pick<ArtifactContentTypes, K> & Pick<ArtifactDeltaTypes, `${K}-delta`>
-    >
+    part:
+      | DataUIMessageChunk<CommonArtifactsUiDataTypes>
+      | DataUIMessageChunk<Pick<ArtifactContentTypes, K>>
+      | DataUIMessageChunk<Pick<ArtifactDeltaTypes, `${K}Delta`>>
   ): void;
 };
-
-const textArtifactDataStreamWriter: ArtifactMessageStreamWriter<"text"> = {
-  write: (part) => {
-    console.log(part);
-  },
-};
-
-textArtifactDataStreamWriter.write({
-  type: "data-text",
-  data: {
-    state: "metadata-available",
-  },
-});

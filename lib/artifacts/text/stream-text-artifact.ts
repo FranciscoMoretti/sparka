@@ -1,7 +1,8 @@
 import { streamText } from "ai";
 import type { AppModelId } from "@/lib/ai/app-models";
-import type { StreamWriter } from "@/lib/ai/types";
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
+import { TextArtifact } from "../schemas";
+import type { ArtifactMessageStreamWriter } from "../types";
 
 export async function streamTextArtifact({
   dataStream,
@@ -10,7 +11,7 @@ export async function streamTextArtifact({
   costEvent,
   streamTextParams,
 }: {
-  dataStream: StreamWriter;
+  dataStream: ArtifactMessageStreamWriter<"text">;
   costAccumulator?: CostAccumulator;
   costModelId: AppModelId;
   costEvent: string;
@@ -21,7 +22,7 @@ export async function streamTextArtifact({
 
   for await (const delta of result.fullStream) {
     if (delta.type === "text-delta") {
-      content += delta.text;
+      content = TextArtifact.reduceDelta(content, delta.text);
       dataStream.write({
         type: "data-textDelta",
         data: delta.text,

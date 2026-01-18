@@ -15,7 +15,6 @@ import type { retrieve } from "@/lib/ai/tools/retrieve";
 import type { updateDocument } from "@/lib/ai/tools/update-document";
 import type { tavilyWebSearch } from "@/lib/ai/tools/web-search";
 import type { Suggestion } from "@/lib/db/schema";
-import type { ArtifactKind } from "../artifacts/artifact-kind";
 import type { ChatArtifactsUiDataTypes } from "../artifacts/types";
 import type { AppModelId } from "./app-models";
 import type { getCreateDocumentTool as createDocument } from "./tools/create-document";
@@ -91,25 +90,16 @@ type FollowupSuggestions = {
   suggestions: string[];
 };
 
-export type CustomUIDataTypes = {
-  textDelta: string;
+export type CustomUIDataTypes = ChatArtifactsUiDataTypes & {
   imageDelta: string;
-  sheetDelta: string;
-  codeDelta: string;
   suggestion: Suggestion;
   appendMessage: string;
-  id: string;
-  messageId: string;
-  title: string;
-  kind: ArtifactKind;
-  clear: null;
-  finish: null;
   chatConfirmed: {
     chatId: string;
   };
   researchUpdate: ResearchUpdate;
   followupSuggestions: FollowupSuggestions;
-} & ChatArtifactsUiDataTypes;
+};
 
 export type ChatMessage = Omit<
   UIMessage<MessageMetadata, CustomUIDataTypes, ChatTools>,

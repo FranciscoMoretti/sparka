@@ -3,35 +3,35 @@ import { codeDocumentHandler } from "@/lib/artifacts/code/server";
 import { sheetDocumentHandler } from "@/lib/artifacts/sheet/server";
 import { textDocumentHandler } from "@/lib/artifacts/text/server";
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
-import type { StreamWriter } from "../ai/types";
 import type { Document } from "../db/schema";
 import type { ArtifactKind } from "./artifact-kind";
+import type { ArtifactMessageStreamWriter } from "./types";
 
-export type CreateDocumentCallbackProps = {
-  dataStream: StreamWriter;
+export type CreateDocumentCallbackProps<K extends ArtifactKind> = {
+  dataStream: ArtifactMessageStreamWriter<K>;
   prompt: string;
   selectedModel: ModelId;
   costAccumulator?: CostAccumulator;
 };
 
-export type UpdateDocumentCallbackProps = {
+export type UpdateDocumentCallbackProps<K extends ArtifactKind> = {
   document: Document;
   prompt: string;
-  dataStream: StreamWriter;
+  dataStream: ArtifactMessageStreamWriter<K>;
   selectedModel: ModelId;
   costAccumulator?: CostAccumulator;
 };
 
-export type DocumentHandler<T = ArtifactKind> = {
+export type DocumentHandler<T extends ArtifactKind = ArtifactKind> = {
   kind: T;
-  generate: (args: CreateDocumentCallbackProps) => Promise<string>;
-  update: (args: UpdateDocumentCallbackProps) => Promise<string>;
+  generate: (args: CreateDocumentCallbackProps<T>) => Promise<string>;
+  update: (args: UpdateDocumentCallbackProps<T>) => Promise<string>;
 };
 
 export function createDocumentHandler<T extends ArtifactKind>(config: {
   kind: T;
-  generate: (params: CreateDocumentCallbackProps) => Promise<string>;
-  update: (params: UpdateDocumentCallbackProps) => Promise<string>;
+  generate: (params: CreateDocumentCallbackProps<T>) => Promise<string>;
+  update: (params: UpdateDocumentCallbackProps<T>) => Promise<string>;
 }): DocumentHandler<T> {
   return {
     kind: config.kind,
@@ -43,8 +43,10 @@ export function createDocumentHandler<T extends ArtifactKind>(config: {
 /*
  * Use this array to define the document handlers for each artifact kind.
  */
-export const documentHandlersByArtifactKind: DocumentHandler[] = [
-  textDocumentHandler,
-  codeDocumentHandler,
-  sheetDocumentHandler,
-];
+export const documentHandlersByArtifactKind: {
+  [K in ArtifactKind]: DocumentHandler<K>;
+} = {
+  text: textDocumentHandler,
+  code: codeDocumentHandler,
+  sheet: sheetDocumentHandler,
+};

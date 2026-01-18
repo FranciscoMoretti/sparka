@@ -1,36 +1,21 @@
 "use client";
+import type { DataUIPart } from "ai";
 import { type Dispatch, type SetStateAction, useEffect, useRef } from "react";
 import { useSaveDocument } from "@/hooks/chat-sync-hooks";
 import { useArtifact } from "@/hooks/use-artifact";
-import type { UiToolName } from "@/lib/ai/types";
-import type { Suggestion } from "@/lib/db/schema";
+import type { CustomUIDataTypes, UiToolName } from "@/lib/ai/types";
+import type { ArtifactInfo } from "@/lib/artifacts/types";
 import { useChatId } from "@/providers/chat-id-provider";
 import { useChatInput } from "@/providers/chat-input-provider";
 import { useSession } from "@/providers/session-provider";
 import { artifactDefinitions } from "./artifact-panel";
 import { useDataStream } from "./data-stream-provider";
 
-export type DataStreamDelta = {
-  type:
-    | "text-delta"
-    | "code-delta"
-    | "sheet-delta"
-    | "image-delta"
-    | "title"
-    | "id"
-    | "message-id"
-    | "suggestion"
-    | "clear"
-    | "finish"
-    | "kind";
-  content: string | Suggestion;
-};
-
 function handleResearchUpdate({
   delta,
   setSelectedTool,
 }: {
-  delta: any;
+  delta: DataUIPart<CustomUIDataTypes>;
   setSelectedTool: Dispatch<SetStateAction<UiToolName | null>>;
 }): void {
   if (delta.type === "data-researchUpdate") {
@@ -49,7 +34,7 @@ function processArtifactStreamPart({
   setArtifact,
   setMetadata,
 }: {
-  delta: any;
+  delta: DataUIPart<CustomUIDataTypes>;
   artifact: ReturnType<typeof useArtifact>["artifact"];
   setArtifact: ReturnType<typeof useArtifact>["setArtifact"];
   setMetadata: ReturnType<typeof useArtifact>["setMetadata"];
@@ -71,38 +56,22 @@ function updateArtifactState({
   delta,
   setArtifact,
 }: {
-  delta: any;
+  delta: DataUIPart<CustomUIDataTypes>;
   setArtifact: ReturnType<typeof useArtifact>["setArtifact"];
 }): void {
   setArtifact((draftArtifact) => {
     switch (delta.type) {
-      case "data-id":
+      case "data-artifactInfo": {
+        const info = delta.data as ArtifactInfo;
         return {
           ...draftArtifact,
-          documentId: delta.data,
+          documentId: info.id,
+          title: info.title,
+          messageId: info.messageId,
+          kind: info.kind,
           status: "streaming",
         };
-
-      case "data-messageId":
-        return {
-          ...draftArtifact,
-          messageId: delta.data,
-          status: "streaming",
-        };
-
-      case "data-title":
-        return {
-          ...draftArtifact,
-          title: delta.data,
-          status: "streaming",
-        };
-
-      case "data-kind":
-        return {
-          ...draftArtifact,
-          kind: delta.data,
-          status: "streaming",
-        };
+      }
 
       case "data-clear":
         return {
@@ -129,7 +98,7 @@ function saveArtifactForAnonymousUser({
   saveDocumentMutation,
   isAuthenticated,
 }: {
-  delta: any;
+  delta: DataUIPart<CustomUIDataTypes>;
   artifact: ReturnType<typeof useArtifact>["artifact"];
   saveDocumentMutation: ReturnType<typeof useSaveDocument>;
   isAuthenticated: boolean;

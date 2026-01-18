@@ -1,8 +1,8 @@
 import { Output, streamText } from "ai";
 import { z } from "zod";
 import type { AppModelId } from "@/lib/ai/app-models";
-import type { StreamWriter } from "@/lib/ai/types";
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
+import type { ArtifactMessageStreamWriter } from "../types";
 
 export async function streamSheetArtifact({
   dataStream,
@@ -11,7 +11,7 @@ export async function streamSheetArtifact({
   costEvent,
   streamTextParams,
 }: {
-  dataStream: StreamWriter;
+  dataStream: ArtifactMessageStreamWriter<"sheet">;
   costAccumulator?: CostAccumulator;
   costModelId: AppModelId;
   costEvent: string;

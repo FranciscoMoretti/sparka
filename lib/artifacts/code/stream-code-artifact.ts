@@ -1,8 +1,9 @@
 import { Output, streamText } from "ai";
 import { z } from "zod";
 import type { AppModelId } from "@/lib/ai/app-models";
-import type { StreamWriter } from "@/lib/ai/types";
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
+import { CodeArtifact } from "../schemas";
+import type { ArtifactMessageStreamWriter } from "../types";
 
 export async function streamCodeArtifact({
   dataStream,
@@ -11,7 +12,7 @@ export async function streamCodeArtifact({
   costEvent,
   streamTextParams,
 }: {
-  dataStream: StreamWriter;
+  dataStream: ArtifactMessageStreamWriter<"code">;
   costAccumulator?: CostAccumulator;
   costModelId: AppModelId;
   costEvent: string;
@@ -31,6 +32,7 @@ export async function streamCodeArtifact({
   for await (const partialObject of result.partialOutputStream) {
     const { code } = partialObject;
 
+    const delta = code - content;
     if (code) {
       dataStream.write({
         type: "data-codeDelta",
@@ -38,7 +40,7 @@ export async function streamCodeArtifact({
         transient: true,
       });
 
-      content = code;
+      content = CodeArtifact.reduceDelta(content, code);
     }
   }
 
