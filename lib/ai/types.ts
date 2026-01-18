@@ -16,6 +16,7 @@ import type { updateDocument } from "@/lib/ai/tools/update-document";
 import type { tavilyWebSearch } from "@/lib/ai/tools/web-search";
 import type { Suggestion } from "@/lib/db/schema";
 import type { ArtifactKind } from "../artifacts/artifact-kind";
+import type { ChatArtifactsUiDataTypes } from "../artifacts/types";
 import type { AppModelId } from "./app-models";
 import type { getCreateDocumentTool as createDocument } from "./tools/create-document";
 import type { ResearchUpdate } from "./tools/research-updates-schema";
@@ -108,7 +109,7 @@ export type CustomUIDataTypes = {
   };
   researchUpdate: ResearchUpdate;
   followupSuggestions: FollowupSuggestions;
-};
+} & ChatArtifactsUiDataTypes;
 
 export type ChatMessage = Omit<
   UIMessage<MessageMetadata, CustomUIDataTypes, ChatTools>,
