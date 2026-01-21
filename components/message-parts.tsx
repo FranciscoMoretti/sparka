@@ -88,9 +88,7 @@ function ToolPart({
   }
 
   if (type === "tool-deepResearch") {
-    return (
-      <DeepResearch messageId={messageId} part={part} />
-    );
+    return <DeepResearch messageId={messageId} part={part} />;
   }
 
   if (type === "tool-webSearch") {
