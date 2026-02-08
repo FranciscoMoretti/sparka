@@ -20,6 +20,7 @@ The `bun chatjs:init` command generates a `chat.config.ts` file with sensible de
 
   | Setting | Default | Notes |
   |---------|---------|-------|
+  | **Gateway** | Vercel AI Gateway | Set `gateway: "openrouter"` for OpenRouter |
   | **Authentication** | GitHub only | Google and Vercel OAuth disabled |
   | **Integrations** | All disabled | No sandbox, web search, MCP, image generation, or attachments |
   | **Anonymous users** | 10 credits | Limited access, no tools |
@@ -153,13 +154,20 @@ The `bun chatjs:init` command generates a `chat.config.ts` file with sensible de
         To disable, set `integrations.attachments: false` and `integrations.imageGeneration: false` in `chat.config.ts`.
       </Accordion>
       <Accordion title="AI Gateway">
-        ChatJS uses [Vercel AI Gateway](https://vercel.com/docs/ai-gateway) to access 120+ models through a single API.
+        ChatJS supports multiple AI gateways. Pick one:
 
+        **Option A: Vercel AI Gateway** (default)
         1. Go to [Vercel AI Gateway](https://vercel.com/ai-gateway)
         2. Create an API key
         3. Copy the key → `AI_GATEWAY_API_KEY`
 
-        See [Multi-Model Support](/core/multi-model) for details on model configuration.
+        **Option B: OpenRouter**
+        1. Go to [OpenRouter](https://openrouter.ai/keys)
+        2. Create an API key
+        3. Copy the key → `OPENROUTER_API_KEY`
+        4. Set `gateway: "openrouter"` in `chat.config.ts`
+
+        See [Vercel Gateway](/core/vercel-gateway) and [OpenRouter Gateway](/core/openrouter-gateway) for details.
       </Accordion>
     </AccordionGroup>
 
@@ -175,7 +183,7 @@ The `bun chatjs:init` command generates a `chat.config.ts` file with sensible de
     |----------|-------------|
     | `DATABASE_URL` | PostgreSQL connection string |
     | `AUTH_SECRET` | [Generate one](https://generate-secret.vercel.app/32) |
-    | `AI_GATEWAY_API_KEY` | From Vercel AI Gateway |
+    | `AI_GATEWAY_API_KEY` | From [Vercel AI Gateway](/core/vercel-gateway) (or `OPENROUTER_API_KEY` for [OpenRouter](/core/openrouter-gateway)) |
     | `APP_URL` | Your app's public URL (e.g., `https://myapp.com`) |
 
     ### 4. Configure Authentication

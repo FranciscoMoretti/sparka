@@ -224,7 +224,15 @@ export const authenticationConfigSchema = z
     vercel: false,
   });
 
+export const gatewaySchema = z
+  .enum(["vercel", "openrouter"])
+  .default("vercel")
+  .describe(
+    "AI gateway backend: 'vercel' for Vercel AI Gateway, 'openrouter' for OpenRouter"
+  );
+
 export const configSchema = z.object({
+  gateway: gatewaySchema,
   githubUrl: z.url().default("https://github.com/your-username/your-repo"),
   appPrefix: z.string().default("chatjs"),
   appName: z.string().default("My AI Chat"),

@@ -23,6 +23,7 @@ const config: ConfigInput = {
       legalEmail: "legal@chatjs.dev",
     },
   },
+  gateway: "vercel",
   services: {
     hosting: "Vercel",
     aiProviders: [

@@ -1,7 +1,10 @@
-import type { gateway } from "@ai-sdk/gateway";
 import { models } from "@/lib/ai/models.generated";
 
-export type ImageModelId = Parameters<(typeof gateway)["imageModel"]>[0];
+/**
+ * Image model IDs use the same "{provider}/{model-name}" format.
+ * Gateway-agnostic string type.
+ */
+export type ImageModelId = string;
 
 // Helper: check if tuple T contains element E
 type TupleIncludes<T extends readonly unknown[], E> = T extends readonly [

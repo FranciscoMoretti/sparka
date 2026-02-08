@@ -1,15 +1,20 @@
 import type { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import { devToolsMiddleware } from "@ai-sdk/devtools";
-import { gateway } from "@ai-sdk/gateway";
 import type { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import type { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
-import { extractReasoningMiddleware, wrapLanguageModel } from "ai";
+import type { LanguageModelV3 } from "@ai-sdk/provider";
+import {
+  extractReasoningMiddleware,
+  type LanguageModelMiddleware,
+  wrapLanguageModel,
+} from "ai";
 import type {
   ImageModelId,
   MultimodalImageModelId,
 } from "../models/image-model-id";
 import type { AppModelId, ModelId } from "./app-models";
 import { getAppModelDefinition } from "./app-models";
+import { getActiveGateway } from "./gateways";
 
 const _telemetryConfig = {
   telemetry: {
@@ -20,7 +25,7 @@ const _telemetryConfig = {
 
 export const getLanguageModel = async (modelId: ModelId) => {
   const model = await getAppModelDefinition(modelId);
-  const languageProvider = gateway(model.id);
+  const languageProvider = getActiveGateway().createLanguageModel(model.id);
 
   const middlewares: Parameters<typeof wrapLanguageModel>[0]["middleware"][] =
     [];
@@ -41,18 +46,24 @@ export const getLanguageModel = async (modelId: ModelId) => {
   }
 
   return wrapLanguageModel({
-    model: languageProvider,
-    // @ts-expect-error - Version of LanguageModel don't match
-    middleware: middlewares,
+    model: languageProvider as LanguageModelV3,
+    middleware: middlewares as LanguageModelMiddleware[],
   });
 };
 
-export const getImageModel = (modelId: ImageModelId) =>
-  gateway.imageModel(modelId);
+export const getImageModel = (modelId: ImageModelId) => {
+  const imageModel = getActiveGateway().createImageModel(modelId);
+  if (!imageModel) {
+    throw new Error(
+      `Gateway '${getActiveGateway().type}' does not support dedicated image models. Use a multimodal language model instead.`
+    );
+  }
+  return imageModel;
+};
 
 // Get a multimodal language model that can generate images via generateText
 export const getMultimodalImageModel = (modelId: MultimodalImageModelId) =>
-  gateway(modelId);
+  getActiveGateway().createLanguageModel(modelId);
 
 // Model aliases removed - use getLanguageModel directly with specific model IDs
 

@@ -21,6 +21,7 @@ description: "How ChatJS is organized"
 │
 ├── lib/
 │   ├── ai/                # AI SDK integration, tools, prompts
+│   │   └── gateways/      # Gateway abstraction (Vercel, OpenRouter)
 │   ├── db/                # Database schema, queries, and data access
 │   ├── models/            # Model types and utilities
 │   └── stores/            # Zustand stores
@@ -95,6 +96,11 @@ See [Tool Part Pattern](/cookbook/tool-part) for implementation details.
 
 ```
 lib/ai/
+├── gateways/          # Gateway abstraction
+│   ├── types.ts       # GatewayProvider interface
+│   ├── index.ts       # Gateway registry + getActiveGateway()
+│   ├── vercel-gateway.ts
+│   └── openrouter-gateway.ts
 ├── models.ts          # Model fetching and caching
 ├── models.generated.ts # Fallback model list
 ├── tools/             # Tool definitions
@@ -151,7 +157,7 @@ POST /api/chat
        ↓
 Vercel AI SDK (streamText)
        ↓
-AI Gateway → Provider (OpenAI, Anthropic, etc.)
+Gateway Abstraction → Provider (OpenAI, Anthropic, etc.)
        ↓
 Stream response with tool calls
        ↓

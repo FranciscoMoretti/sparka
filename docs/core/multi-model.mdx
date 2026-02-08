@@ -1,15 +1,20 @@
 ---
 title: "Multi-Model Support"
-description: "Access 120+ AI models through a unified API"
+description: "Access hundreds of AI models through a pluggable gateway abstraction"
 ---
 
-ChatJS provides access to 120+ models from multiple providers through the [Vercel AI Gateway](https://vercel.com/docs/ai-gateway).
+ChatJS provides access to hundreds of models from multiple providers through a pluggable gateway system. Set `gateway` in `chat.config.ts` to choose your backend:
+
+| Gateway | Models | Setup |
+|---------|--------|-------|
+| [Vercel AI Gateway](/core/vercel-gateway) (default) | 120+ | `AI_GATEWAY_API_KEY` |
+| [OpenRouter](/core/openrouter-gateway) | Hundreds | `OPENROUTER_API_KEY` |
 
 ## Model Registry Architecture
 
 ### Auto-Update (Runtime)
 
-The app fetches available models from the AI Gateway API at runtime. Results are cached for 1 hour.
+The app fetches available models from the active gateway's API at runtime. Results are cached for 1 hour.
 
 ```typescript
 // lib/ai/models.ts
@@ -107,9 +112,15 @@ Users configure their model preferences at `/settings/models`. This page lets us
 
 ## Environment Variables
 
-The AI Gateway handles authentication with all providers. You do not need individual API keys for OpenAI, Anthropic, Google, etc. Instead, you authenticate with the gateway using one of these:
+The active gateway handles authentication with all providers. You do not need individual API keys for OpenAI, Anthropic, Google, etc. Instead, you authenticate with the gateway:
 
+**Vercel AI Gateway** (default):
 - `VERCEL_OIDC_TOKEN` (automatically provided on Vercel deployments)
 - `AI_GATEWAY_API_KEY` (for non-Vercel deployments, obtain from [Vercel AI Gateway](https://vercel.com/docs/ai-gateway))
 
-Without either key, the app uses the fallback model list and cannot make API calls to providers.
+**OpenRouter**:
+- `OPENROUTER_API_KEY` (obtain from [OpenRouter](https://openrouter.ai/keys))
+
+Without the required key for your active gateway, the app uses the fallback model list and cannot make API calls to providers.
+
+See [Vercel Gateway](/core/vercel-gateway) and [OpenRouter Gateway](/core/openrouter-gateway) for detailed setup.

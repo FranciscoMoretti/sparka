@@ -1,29 +1,20 @@
 import { writeFileSync } from "node:fs";
+import { getActiveGateway } from "../lib/ai/gateways";
 
 async function fetchAndSaveModels() {
-  const apiKey =
-    process.env.AI_GATEWAY_API_KEY || process.env.VERCEL_OIDC_TOKEN;
+  const gateway = getActiveGateway();
 
+  const apiKey = gateway.getApiKey();
   if (!apiKey) {
-    throw new Error("No AI gateway API key found");
+    throw new Error(`No API key configured for gateway '${gateway.type}'`);
   }
 
-  const response = await fetch("https://ai-gateway.vercel.sh/v1/models", {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-  });
+  console.log(`Fetching models from '${gateway.type}' gateway...`);
+  const models = await gateway.fetchModels();
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch models: ${response.statusText}`);
+  if (!models || models.length === 0) {
+    throw new Error("No models returned from gateway");
   }
-
-  const body = await response.json();
-  if (!(body.data && Array.isArray(body.data))) {
-    throw new Error("Invalid response structure: expected data array");
-  }
-  const models = body.data;
 
   const fileContent = `import type { AiGatewayModel } from "@/lib/ai/ai-gateway-models-schemas";
 
@@ -31,7 +22,9 @@ export const models = ${JSON.stringify(models, null, 2)} as const satisfies read
 `;
 
   writeFileSync("lib/ai/models.generated.ts", fileContent);
-  console.log(`Wrote ${models.length} models to lib/ai/models.generated.ts`);
+  console.log(
+    `Wrote ${models.length} models from '${gateway.type}' gateway to lib/ai/models.generated.ts`
+  );
 }
 
 fetchAndSaveModels();

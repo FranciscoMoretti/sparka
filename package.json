@@ -69,6 +69,7 @@
     "@lobehub/icons": "^2.23.1",
     "@mendable/firecrawl-js": "1.29.1",
     "@modelcontextprotocol/sdk": "^1.24.3",
+    "@openrouter/ai-sdk-provider": "^2.1.1",
     "@opentelemetry/api-logs": "^0.200.0",
     "@opentelemetry/instrumentation": "^0.200.0",
     "@opentelemetry/sdk-logs": "^0.200.0",

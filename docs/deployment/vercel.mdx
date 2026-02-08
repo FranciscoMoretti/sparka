@@ -22,13 +22,13 @@ ChatJS uses several Vercel platform features. Enable them in your Vercel dashboa
 
 ### AI Gateway
 
-AI Gateway provides a single API key to access models from OpenAI, Anthropic, Google, and more.
+By default, ChatJS uses [Vercel AI Gateway](/core/vercel-gateway) to access 120+ models from OpenAI, Anthropic, Google, and more.
 
 1. Go to [Vercel AI Gateway](https://vercel.com/ai-gateway)
 2. Create an API key
 3. Add to environment: `AI_GATEWAY_API_KEY`
 
-See [Multi-Model Support](/core/multi-model) for configuring available models.
+You can switch to [OpenRouter](/core/openrouter-gateway) by setting `gateway: "openrouter"` in `chat.config.ts`. See [Multi-Model Support](/core/multi-model) for configuring available models.
 
 ### Blob Storage
 
@@ -138,7 +138,7 @@ Sandboxes run with:
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
 | `AUTH_SECRET` | Session encryption key |
-| `AI_GATEWAY_API_KEY` | Vercel AI Gateway key |
+| `AI_GATEWAY_API_KEY` | Vercel AI Gateway key (or `OPENROUTER_API_KEY` if using OpenRouter) |
 
 ### Optional (Vercel Features)
 

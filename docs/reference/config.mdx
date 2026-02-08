@@ -94,6 +94,8 @@ export type AttachmentsConfig = {
 };
 
 export type Config = {
+  /** AI gateway backend: "vercel" (default) or "openrouter" */
+  gateway: "vercel" | "openrouter";
   githubUrl: string;
   appPrefix: string;
   appName: string;
@@ -177,6 +179,15 @@ export type Config = {
   attachments: AttachmentsConfig;
 };
 ```
+
+## Gateway
+
+The `gateway` field determines which AI backend is used for model creation and model-list fetching. Validated at build time.
+
+| Value | Backend | Required Env Vars |
+|-------|---------|-------------------|
+| `"vercel"` (default) | [Vercel AI Gateway](/core/vercel-gateway) | `AI_GATEWAY_API_KEY` or `VERCEL_OIDC_TOKEN` |
+| `"openrouter"` | [OpenRouter](/core/openrouter-gateway) | `OPENROUTER_API_KEY` |
 
 ## Feature flags + env validation
 

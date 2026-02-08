@@ -29,6 +29,8 @@
               "core/configuration",
               "core/authentication",
               "core/multi-model",
+              "core/vercel-gateway",
+              "core/openrouter-gateway",
               "core/syntax-highlighting"
             ]
           },

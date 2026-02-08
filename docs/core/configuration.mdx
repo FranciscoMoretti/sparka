@@ -23,6 +23,8 @@ const config: ConfigInput = {
     },
   },
 
+  gateway: "vercel", // or "openrouter"
+
   integrations: {
     sandbox: true,         // Code execution (Python/JS)
     webSearch: true,       // Tavily/Exa web search
@@ -40,6 +42,19 @@ const config: ConfigInput = {
 };
 
 export default config;
+```
+
+## AI Gateway
+
+The `gateway` field selects which AI backend to use. All model routing, fetching, and API calls go through the active gateway.
+
+| Value | Backend | Env Dependency |
+|-------|---------|----------------|
+| `"vercel"` (default) | [Vercel AI Gateway](/core/vercel-gateway) | `AI_GATEWAY_API_KEY` or `VERCEL_OIDC_TOKEN` |
+| `"openrouter"` | [OpenRouter](/core/openrouter-gateway) | `OPENROUTER_API_KEY` |
+
+```typescript
+gateway: "openrouter", // Switch to OpenRouter
 ```
 
 ## Integrations
@@ -113,6 +128,8 @@ Full type reference:
 
 ```typescript
 export type Config = {
+  /** AI gateway backend */
+  gateway: "vercel" | "openrouter";
   githubUrl: string;
   appPrefix: string;
   appName: string;

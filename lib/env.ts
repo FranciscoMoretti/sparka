@@ -18,9 +18,10 @@ export const env = createEnv({
     VERCEL_APP_CLIENT_ID: z.string().optional(),
     VERCEL_APP_CLIENT_SECRET: z.string().optional(),
 
-    // One of the AI Gateway API key or Vercel OIDC token must be configured
+    // AI Gateway keys (one required depending on config.gateway)
     AI_GATEWAY_API_KEY: z.string().optional(),
     VERCEL_OIDC_TOKEN: z.string().optional(),
+    OPENROUTER_API_KEY: z.string().optional(),
 
     // Optional cleanup cron job secret
     CRON_SECRET: z.string().optional(),

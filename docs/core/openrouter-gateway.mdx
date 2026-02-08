@@ -1,0 +1,82 @@
+---
+title: "OpenRouter Gateway"
+description: "Access hundreds of AI models through OpenRouter"
+---
+
+The OpenRouter gateway connects ChatJS to [OpenRouter](https://openrouter.ai), a unified API that routes to hundreds of models from OpenAI, Anthropic, Google, Meta, Mistral, and many others.
+
+Use this gateway when you want an alternative to Vercel AI Gateway or need access to models not available through Vercel.
+
+## Setup
+
+1. Create an account at [OpenRouter](https://openrouter.ai)
+2. Go to [API Keys](https://openrouter.ai/keys) and create a key
+3. Add to `.env.local`:
+
+```bash
+OPENROUTER_API_KEY=sk-or-v1-...
+```
+
+4. Set the gateway in your config:
+
+```typescript title="chat.config.ts"
+const config: ConfigInput = {
+  gateway: "openrouter",
+  // ...
+};
+```
+
+## Authentication
+
+| Variable | Description |
+|----------|-------------|
+| `OPENROUTER_API_KEY` | Required. Your OpenRouter API key |
+
+Without the key, the app falls back to the static model snapshot in `models.generated.ts` and cannot make API calls.
+
+## Available models
+
+OpenRouter provides access to hundreds of models. The full list is fetched at runtime from `https://openrouter.ai/api/v1/models` and cached for 1 hour.
+
+The OpenRouter response format is automatically normalized to match the internal `AiGatewayModel` schema. This includes:
+
+- `context_length` mapped to `context_window`
+- `pricing.prompt` / `pricing.completion` mapped to `pricing.input` / `pricing.output`
+- Tags derived from `architecture.input_modalities`, `architecture.output_modalities`, and `supported_parameters` (vision, reasoning, tool-use, image-generation, etc.)
+
+## Model IDs
+
+Model IDs use the same `provider/model` format as Vercel AI Gateway. For example:
+
+- `openai/gpt-4o`
+- `anthropic/claude-sonnet-4`
+- `google/gemini-2.5-flash`
+- `meta-llama/llama-4-maverick`
+
+Your existing model configuration in `chat.config.ts` works across both gateways as long as the model IDs match. Check [OpenRouter Models](https://openrouter.ai/models) for the full list of available IDs.
+
+## Image generation
+
+OpenRouter routes image generation through multimodal language models rather than dedicated image APIs. `createImageModel()` returns `null` for this gateway.
+
+Models with the `image-generation` tag (those with `image` in their output modalities) can still generate images inline through `createLanguageModel()`. The existing [Image Generation](/features/image-generation) feature handles this automatically.
+
+## Pricing
+
+OpenRouter charges per-token based on the underlying model's pricing. Check [OpenRouter Pricing](https://openrouter.ai/models) for current rates.
+
+You can set spending limits in your [OpenRouter dashboard](https://openrouter.ai/settings/limits).
+
+## Key files
+
+| File | Purpose |
+|------|---------|
+| `lib/ai/gateways/openrouter-gateway.ts` | Gateway implementation |
+| `lib/ai/gateways/types.ts` | `GatewayProvider` interface |
+| `lib/ai/gateways/index.ts` | Gateway registry and resolution |
+
+## Related
+
+- [Multi-Model Support](/core/multi-model) for model configuration
+- [Vercel Gateway](/core/vercel-gateway) for the default gateway
+- [Configuration](/core/configuration) for the `gateway` config field
