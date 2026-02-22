@@ -35,7 +35,28 @@ export type PricingConfig = {
   };
 };
 
+export type FeaturesConfig = {
+  /** Code sandbox execution (Vercel-native) */
+  sandbox: boolean;
+  /** Web search (requires TAVILY_API_KEY or FIRECRAWL_API_KEY) */
+  webSearch: boolean;
+  /** URL content retrieval (requires FIRECRAWL_API_KEY) */
+  urlRetrieval: boolean;
+  /** Deep research agent (requires webSearch) */
+  deepResearch: boolean;
+  /** MCP tool servers (requires MCP_ENCRYPTION_KEY) */
+  mcp: boolean;
+  /** AI image generation (requires BLOB_READ_WRITE_TOKEN) */
+  imageGeneration: boolean;
+  /** File attachments - images and PDFs (requires BLOB_READ_WRITE_TOKEN) */
+  attachments: boolean;
+  /** Follow-up question suggestions after AI responses */
+  followupSuggestions: boolean;
+};
+
 export type ModelsConfig = {
+  /** AI gateway backend */
+  gateway: "vercel" | "openrouter" | "openai" | "openai-compatible";
   /** Provider sort order in model selector */
   providerOrder: string[];
   /** Models to hide from all users */
@@ -59,6 +80,8 @@ export type ModelsConfig = {
     codeEdits: AppModelId;
     chatImageCompatible: AppModelId;
     image: ImageModelId;
+    deepResearch: AppModelId;
+    deepResearchFinalReport: AppModelId;
   };
 };
 
@@ -87,10 +110,18 @@ export type AttachmentsConfig = {
   };
 };
 
+export type DeepResearchConfig = {
+  /** Whether to ask clarifying questions before starting research */
+  allowClarification: boolean;
+  /** Maximum supervisor loop iterations (1–10) */
+  maxResearcherIterations: number;
+  /** Topics researched in parallel per iteration (1–20) */
+  maxConcurrentResearchUnits: number;
+  /** Max search queries per research topic (1–10) */
+  maxSearchQueries: number;
+};
+
 export type Config = {
-  /** AI gateway backend: "vercel" (default) or "openrouter" */
-  gateway: "vercel" | "openrouter";
-  githubUrl: string;
   appPrefix: string;
   appName: string;
   /** Browser tab title (defaults to appName) */
@@ -112,25 +143,8 @@ export type Config = {
     paymentProcessors: string[];
   };
 
-  /**
-   * Feature flags for optional features.
-   * Set to true to enable - requires corresponding env vars.
-   * Validated at build time via scripts/check-env.ts.
-   */
-  features: {
-    /** Code sandbox execution (Vercel-native) */
-    sandbox: boolean;
-    /** Web search */
-    webSearch: boolean;
-    /** URL content retrieval */
-    urlRetrieval: boolean;
-    /** MCP tool servers */
-    mcp: boolean;
-    /** AI image generation (requires BLOB_READ_WRITE_TOKEN) */
-    imageGeneration: boolean;
-    /** File attachments - images and PDFs (requires BLOB_READ_WRITE_TOKEN) */
-    attachments: boolean;
-  };
+  /** Feature flags — set to true to enable, requires corresponding env vars */
+  features: FeaturesConfig;
 
   pricing?: PricingConfig;
 
@@ -151,11 +165,7 @@ export type Config = {
     };
   };
 
-  /**
-   * Auth provider toggles.
-   * Set to true to enable - requires corresponding env vars.
-   * Validated at build time via scripts/check-env.ts.
-   */
+  /** Auth provider toggles — set to true to enable, requires corresponding env vars */
   authentication: {
     /** Google OAuth (requires AUTH_GOOGLE_ID + AUTH_GOOGLE_SECRET) */
     google: boolean;
@@ -165,18 +175,20 @@ export type Config = {
     vercel: boolean;
   };
 
-  /** Model configuration */
+  /** Model and gateway configuration */
   models: ModelsConfig;
   /** Anonymous user configuration */
   anonymous: AnonymousConfig;
   /** File attachment configuration */
   attachments: AttachmentsConfig;
+  /** Deep research agent configuration */
+  deepResearch: DeepResearchConfig;
 };
 ```
 
 ## Gateway
 
-The `gateway` field determines which AI backend is used for model creation and model-list fetching. Validated at build time.
+The `models.gateway` field determines which AI backend is used for model creation and model-list fetching. Validated at build time.
 
 | Value                 | Backend                                          | Required Env Vars                           |
 | --------------------- | ------------------------------------------------ | ------------------------------------------- |
@@ -197,9 +209,11 @@ Feature flags live under `features` and `authentication`. They're validated at b
 - **`features.sandbox`**: requires `VERCEL_OIDC_TOKEN` (on Vercel) _or_ `VERCEL_TEAM_ID + VERCEL_PROJECT_ID + VERCEL_TOKEN` (self-hosted)
 - **`features.webSearch`**: requires `TAVILY_API_KEY` _or_ `FIRECRAWL_API_KEY`
 - **`features.urlRetrieval`**: requires `FIRECRAWL_API_KEY` - fetch structured content from URLs
+- **`features.deepResearch`**: requires `features.webSearch: true` - multi-step research agent
 - **`features.mcp`**: requires `MCP_ENCRYPTION_KEY`
 - **`features.imageGeneration`**: requires `BLOB_READ_WRITE_TOKEN` - AI-powered image generation tool
 - **`features.attachments`**: requires `BLOB_READ_WRITE_TOKEN` - file uploads (images and PDFs)
+- **`features.followupSuggestions`**: no env var required — generates contextual follow-up questions after responses
 
 ### Authentication
 
@@ -211,3 +225,4 @@ Feature flags live under `features` and `authentication`. They're validated at b
 
 - **Anonymous limits**: `anonymous.credits` and rate limits are typically higher in dev and lower in prod (see `config.anonymous` implementation).
 - **Models**: `models.defaults` drives which model is used per task; `models.disabledModels` hard-hides models globally; `models.anonymousModels` constrains what anonymous users can pick.
+- **Deep research**: the `deepResearch` top-level config controls pipeline behavior (iterations, parallelism). Model selection for deep research uses `models.defaults.deepResearch` and `models.defaults.deepResearchFinalReport`.

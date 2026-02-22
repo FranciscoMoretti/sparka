@@ -1,0 +1,129 @@
+---
+title: CLI Reference
+description: "@chat-js/cli command reference"
+---
+
+## Overview
+
+`@chat-js/cli` scaffolds new ChatJS applications. It walks you through selecting an AI gateway, features, and auth providers, then generates a fully configured Next.js project.
+
+## Installation
+
+No installation required — run it directly with `npx`:
+
+```bash
+npx @chat-js/cli@latest create my-app
+```
+
+Or install globally:
+
+```bash
+npm install -g @chat-js/cli
+chat-js create my-app
+```
+
+## Commands
+
+### `create`
+
+Scaffold a new ChatJS app. This is the default command — you can omit the word `create` and pass the directory directly.
+
+```bash
+npx @chat-js/cli@latest create [directory] [options]
+npx @chat-js/cli@latest [directory] [options]
+```
+
+**Arguments**
+
+| Argument    | Description                                                          |
+| ----------- | -------------------------------------------------------------------- |
+| `directory` | Target directory for the project. Prompted interactively if omitted. |
+
+**Options**
+
+| Flag               | Default | Description                                                                         |
+| ------------------ | ------- | ----------------------------------------------------------------------------------- |
+| `-y, --yes`        | `false` | Skip all prompts and use defaults (Vercel gateway, GitHub auth, no extra features). |
+| `--no-install`     | —       | Skip automatic dependency installation.                                             |
+| `--from-git <url>` | —       | Clone from a git repository instead of the built-in template.                       |
+| `-v, --version`    | —       | Print the CLI version.                                                              |
+
+The CLI auto-detects your package manager from the `npm_config_user_agent` environment variable (npm, pnpm, yarn, or bun).
+
+After scaffolding, the CLI prints the exact environment variables required for your chosen configuration.
+
+---
+
+### `add`
+
+```bash
+npx @chat-js/cli@latest add [components...]
+```
+
+Add a component or feature to an existing ChatJS project.
+
+**Status: not yet implemented.** This command is reserved for a future release that will let you add features, auth providers, and gateways to existing projects without re-scaffolding.
+
+## What gets generated
+
+The `create` command copies the built-in template and then writes a tailored `chat.config.ts`. The generated project structure is:
+
+```
+my-app/
+├── app/                    # Next.js App Router pages and layouts
+│   ├── (auth)/             # Auth-related routes
+│   ├── (chat)/             # Chat interface routes
+│   ├── api/                # API route handlers
+│   └── layout.tsx
+├── components/             # Shared UI components
+├── hooks/                  # React hooks
+├── lib/                    # Core logic (AI, auth, DB, config schema)
+├── providers/              # React context providers
+├── trpc/                   # tRPC router
+├── chat.config.ts          # Your app configuration (generated)
+├── drizzle.config.ts       # Database schema config
+├── next.config.ts
+├── package.json
+└── tsconfig.json
+```
+
+`chat.config.ts` is written with your chosen gateway, features, and auth providers pre-filled. All other config fields are set to sensible defaults with inline comments.
+
+## Examples
+
+**Interactive setup (recommended)**
+
+```bash
+npx @chat-js/cli@latest create my-chat-app
+```
+
+**Skip prompts, use all defaults**
+
+```bash
+npx @chat-js/cli@latest create my-chat-app --yes
+```
+
+Defaults: Vercel AI Gateway, GitHub OAuth, Follow-up Suggestions only, bun install.
+
+**Create without installing dependencies**
+
+```bash
+npx @chat-js/cli@latest create my-chat-app --no-install
+```
+
+**Clone from a custom git repository**
+
+```bash
+npx @chat-js/cli@latest create my-chat-app --from-git https://github.com/your-org/your-fork
+```
+
+**Full flow after scaffolding**
+
+```bash
+npx @chat-js/cli@latest create my-chat-app
+cd my-chat-app
+cp .env.example .env.local
+# Fill in the env vars printed by the CLI
+npm run db:push
+npm run dev
+```

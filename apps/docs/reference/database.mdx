@@ -1,39 +1,44 @@
 ---
 title: Database
-description: Database setup, migrations, and development workflows
+description: PostgreSQL database management commands and schema workflow
 ---
 
-ChatJS uses PostgreSQL with Drizzle ORM for type-safe database access.
+## Overview
 
-## Schema
+ChatJS uses **PostgreSQL** with **Drizzle ORM** for type-safe, schema-first database access. The schema is defined in `apps/chat/lib/db/schema.ts` — edit it to change the database structure.
 
-The database schema is defined in `lib/db/schema.ts`.
+---
 
-## Migrations
+## Database Management
 
-Generate and run migrations with:
+Run these commands from the `apps/chat` directory:
 
 ```bash
-# Generate migration from schema changes
+# Push schema changes directly to the database (dev only — no migration file)
+bun db:push
+
+# Open Drizzle Studio at https://local.drizzle.studio
+bun db:studio
+
+# Generate a migration file from schema changes
 bun db:generate
 
-# Run pending migrations
+# Run pending migration files against the database
 bun db:migrate
-
-# Push schema directly (dev only, no migration file)
-bun db:push
 ```
 
-## Neon Branching
+- **`db:push`** — fastest for local iteration; skips migration files. Not safe for production.
+- **`db:generate` + `db:migrate`** — the production workflow; creates a versioned SQL file and applies it.
+- **`db:studio`** — inspect, query, and edit data via a browser UI.
 
-When working on schema changes, use Neon branching to avoid affecting production data. See the [Neon Branching recipe](/cookbook/neon-branching) for setup and usage.
+---
 
-## Drizzle Studio
+## Schema Changes
 
-Inspect your database with Drizzle Studio:
+All schema changes start in `apps/chat/lib/db/schema.ts`. After editing:
 
-```bash
-bun db:studio
-```
+1. Run `bun db:generate` to produce a migration file in `drizzle/`.
+2. Review the generated SQL to confirm the diff is correct.
+3. Run `bun db:migrate` to apply it.
 
-Opens a web UI at `https://local.drizzle.studio` for browsing and editing data.
+For production schema changes, use Neon branching to isolate the change first. See [Neon Branching](/cookbook/neon-branching).

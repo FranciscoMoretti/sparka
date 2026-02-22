@@ -1,0 +1,309 @@
+---
+title: Environment Variables
+description: Complete reference for all environment variables used by ChatJS
+---
+
+This page lists every environment variable recognized by ChatJS, grouped by category. The schema is defined in `apps/chat/lib/env-schema.ts` and validated at build time by `scripts/check-env.ts`.
+
+<Note>
+  Missing required variables will cause the build to fail immediately. Variables
+  that are required only when a feature or gateway is enabled are validated based
+  on your `chat.config.ts` settings.
+</Note>
+
+## Required
+
+These two variables must always be set. Without them the app will not start.
+
+| Variable | Description | How to get it |
+|----------|-------------|---------------|
+| `DATABASE_URL` | PostgreSQL connection string | [Neon](https://neon.tech), [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres/quickstart), or any Postgres provider |
+| `AUTH_SECRET` | Secret used to sign and encrypt session tokens (Better Auth) | Run `openssl rand -base64 32` or use [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32) |
+
+In addition to the two variables above, **at least one AI gateway key** and **at least one OAuth provider** must be configured. See the sections below.
+
+---
+
+## Authentication
+
+Enable providers in `chat.config.ts` under `authentication`. At least one must be enabled. The build validator checks that every enabled provider has its corresponding env vars set.
+
+```typescript title="chat.config.ts"
+authentication: {
+  google: false, // Requires AUTH_GOOGLE_ID + AUTH_GOOGLE_SECRET
+  github: true,  // Requires AUTH_GITHUB_ID + AUTH_GITHUB_SECRET
+  vercel: false, // Requires VERCEL_APP_CLIENT_ID + VERCEL_APP_CLIENT_SECRET
+},
+```
+
+### GitHub OAuth
+
+| Variable | Description |
+|----------|-------------|
+| `AUTH_GITHUB_ID` | GitHub OAuth app client ID |
+| `AUTH_GITHUB_SECRET` | GitHub OAuth app client secret |
+
+**Setup:** Go to [GitHub Developer Settings](https://github.com/settings/developers) → **New OAuth App**. Set the callback URL to `https://yourdomain.com/api/auth/callback/github`.
+
+### Google OAuth
+
+| Variable | Description |
+|----------|-------------|
+| `AUTH_GOOGLE_ID` | Google OAuth 2.0 client ID |
+| `AUTH_GOOGLE_SECRET` | Google OAuth 2.0 client secret |
+
+**Setup:** Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials) → **Create credentials** → **OAuth 2.0 Client ID** (Web application). Add `https://yourdomain.com/api/auth/callback/google` as an authorized redirect URI.
+
+### Vercel OAuth
+
+| Variable | Description |
+|----------|-------------|
+| `VERCEL_APP_CLIENT_ID` | Vercel OAuth integration client ID |
+| `VERCEL_APP_CLIENT_SECRET` | Vercel OAuth integration client secret |
+
+**Setup:** Follow the [Sign In with Vercel](https://vercel.com/docs/integrations/create-integration) guide to create an integration.
+
+---
+
+## AI Gateways
+
+Exactly one gateway must be active. Set `models.gateway` in `chat.config.ts` to select it.
+
+```typescript title="chat.config.ts"
+models: {
+  gateway: "vercel", // "vercel" | "openrouter" | "openai" | "openai-compatible"
+}
+```
+
+### Vercel AI Gateway (default)
+
+Provides access to 120+ models from OpenAI, Anthropic, Google, xAI, Meta, and more through a single key. This is the default gateway.
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AI_GATEWAY_API_KEY` | Self-hosted / local dev | API key for Vercel AI Gateway |
+| `VERCEL_OIDC_TOKEN` | Auto-set on Vercel | OIDC token injected automatically on Vercel deployments |
+
+<Tip>
+  On Vercel deployments, `VERCEL_OIDC_TOKEN` is injected automatically. You only need `AI_GATEWAY_API_KEY` for local development or non-Vercel hosting.
+</Tip>
+
+**Setup:** Go to [Vercel AI Gateway](https://vercel.com/ai-gateway) and create an API key.
+
+### OpenRouter
+
+Provides access to hundreds of models with per-token pricing.
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENROUTER_API_KEY` | Yes | Your OpenRouter API key (`sk-or-v1-...`) |
+
+**Setup:** Create an account at [OpenRouter](https://openrouter.ai), then go to [API Keys](https://openrouter.ai/keys).
+
+### OpenAI
+
+Direct connection to the OpenAI API. Use when you only need OpenAI models.
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | Yes | Your OpenAI API key (`sk-...`) |
+
+**Setup:** Go to [OpenAI Platform](https://platform.openai.com/api-keys) and create an API key.
+
+### OpenAI Compatible
+
+Works with any endpoint that follows the OpenAI API format: Ollama, LM Studio, vLLM, Azure OpenAI, and others.
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_COMPATIBLE_BASE_URL` | Yes | Base URL of the compatible API (e.g., `http://localhost:11434/v1`) |
+| `OPENAI_COMPATIBLE_API_KEY` | Optional | API key, if the provider requires one |
+
+**Setup:** Start your compatible server (for example, run `ollama serve` for Ollama) and set `OPENAI_COMPATIBLE_BASE_URL` to its `/v1` endpoint.
+
+---
+
+## Features
+
+Feature flags live under `features` in `chat.config.ts`. Each flag has an associated environment variable requirement validated at build time.
+
+### Web Search
+
+Enable real-time web search with citations. Requires at least one search provider key.
+
+```typescript title="chat.config.ts"
+features: {
+  webSearch: true,    // Requires TAVILY_API_KEY or FIRECRAWL_API_KEY
+  urlRetrieval: true, // Requires FIRECRAWL_API_KEY
+}
+```
+
+| Variable | Feature | Description | Get it |
+|----------|---------|-------------|--------|
+| `TAVILY_API_KEY` | `webSearch` | Tavily API key for web search (recommended) | [app.tavily.com](https://app.tavily.com) |
+| `EXA_API_KEY` | `webSearch` | Exa API key for web search | [dashboard.exa.ai](https://dashboard.exa.ai) |
+| `FIRECRAWL_API_KEY` | `webSearch`, `urlRetrieval` | Firecrawl API key for web search and URL content extraction | [firecrawl.dev](https://www.firecrawl.dev) |
+
+<Note>
+  If both `TAVILY_API_KEY` and `FIRECRAWL_API_KEY` are set, Tavily is used for regular chat web search. Firecrawl is always used for URL retrieval.
+</Note>
+
+### MCP Connectors
+
+Enable [Model Context Protocol](https://modelcontextprotocol.io) server connections to expose custom tools and data sources to the AI.
+
+```typescript title="chat.config.ts"
+features: {
+  mcp: true, // Requires MCP_ENCRYPTION_KEY
+}
+```
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `MCP_ENCRYPTION_KEY` | Yes | 44-character base64 key used to encrypt stored MCP server credentials (URLs, OAuth tokens) |
+
+**Generate a key:**
+
+```bash
+openssl rand -base64 32
+```
+
+<Note>
+  The key must be exactly 44 characters (32 bytes encoded as base64). Changing this key after deployment will invalidate all stored MCP connector credentials.
+</Note>
+
+### Blob Storage (Attachments and Image Generation)
+
+Required for file attachment uploads and AI image generation.
+
+```typescript title="chat.config.ts"
+features: {
+  attachments: true,      // Requires BLOB_READ_WRITE_TOKEN
+  imageGeneration: true,  // Requires BLOB_READ_WRITE_TOKEN
+}
+```
+
+| Variable | Required | Description | Get it |
+|----------|----------|-------------|--------|
+| `BLOB_READ_WRITE_TOKEN` | Yes (for these features) | Vercel Blob storage token | [Vercel Storage](https://vercel.com/docs/storage/vercel-blob) → Create → Blob |
+
+<Tip>
+  When using Vercel, connect a Blob store in your project dashboard under **Storage**. The token is added to your environment automatically.
+</Tip>
+
+### Code Execution Sandbox
+
+Enable secure Python code execution using [Vercel Sandbox](https://vercel.com/docs/functions/runtimes/vercel-sandbox).
+
+```typescript title="chat.config.ts"
+features: {
+  sandbox: true,
+}
+```
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VERCEL_OIDC_TOKEN` | Auto-set on Vercel | Used automatically for OIDC auth on Vercel deployments |
+| `VERCEL_TEAM_ID` | Self-hosted only | Your Vercel team ID (`team_...`) |
+| `VERCEL_PROJECT_ID` | Self-hosted only | Your Vercel project ID (`prj_...`) |
+| `VERCEL_TOKEN` | Self-hosted only | Vercel API token with sandbox permissions |
+| `VERCEL_SANDBOX_RUNTIME` | Optional | Sandbox runtime identifier (default: `python3.13`) |
+
+<Note>
+  On Vercel deployments, sandbox authentication happens automatically via OIDC — no additional variables needed. Set `VERCEL_TEAM_ID`, `VERCEL_PROJECT_ID`, and `VERCEL_TOKEN` only when running ChatJS outside of Vercel.
+</Note>
+
+---
+
+## Optional / Advanced
+
+### Resumable Streams
+
+Allows users to reconnect to an ongoing AI generation after a page refresh or network interruption.
+
+| Variable | Description | Get it |
+|----------|-------------|--------|
+| `REDIS_URL` | Redis connection URL for stream state storage | [Vercel KV](https://vercel.com/docs/storage/vercel-kv) or any Redis provider |
+
+Without `REDIS_URL`, streams work normally but cannot be resumed after disconnection.
+
+### Cron Job Secret
+
+Secures the `/api/cron/cleanup` endpoint that removes orphaned blob attachments.
+
+| Variable | Description |
+|----------|-------------|
+| `CRON_SECRET` | Bearer token that the cron runner must send to authenticate |
+
+**Generate a secret:**
+
+```bash
+openssl rand -base64 32
+```
+
+On Vercel, the platform automatically sends `CRON_SECRET` as a `Authorization: Bearer <secret>` header when triggering cron jobs.
+
+### App URL
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `APP_URL` | Non-Vercel deployments | Full public URL of the app including protocol (e.g., `https://myapp.com`) |
+| `VERCEL_URL` | Auto-set by Vercel | Hostname auto-injected by the Vercel platform; used when `APP_URL` is not set |
+
+### Observability (Langfuse)
+
+ChatJS uses [OpenTelemetry](https://opentelemetry.io) via `@vercel/otel` and exports traces to [Langfuse](https://langfuse.com) for LLM observability. These variables are read by the `langfuse-vercel` exporter and are not part of the Zod env schema — they are picked up automatically by the Langfuse SDK from the environment.
+
+| Variable | Description | Get it |
+|----------|-------------|--------|
+| `LANGFUSE_PUBLIC_KEY` | Langfuse project public key | [Langfuse Cloud](https://cloud.langfuse.com) → Project Settings → API Keys |
+| `LANGFUSE_SECRET_KEY` | Langfuse project secret key | Same as above |
+| `LANGFUSE_BASE_URL` | Langfuse API base URL (default: `https://cloud.langfuse.com`) | Set to your self-hosted Langfuse URL if applicable |
+
+Omitting these variables disables trace export. The app runs normally without them.
+
+---
+
+## Quick Reference
+
+All variables in one place:
+
+| Variable | Category | Required |
+|----------|----------|----------|
+| `DATABASE_URL` | Core | Always |
+| `AUTH_SECRET` | Core | Always |
+| `AI_GATEWAY_API_KEY` | Gateway | Vercel gateway (non-Vercel hosting) |
+| `VERCEL_OIDC_TOKEN` | Gateway | Auto-set on Vercel |
+| `OPENROUTER_API_KEY` | Gateway | OpenRouter gateway |
+| `OPENAI_API_KEY` | Gateway | OpenAI gateway |
+| `OPENAI_COMPATIBLE_BASE_URL` | Gateway | OpenAI-compatible gateway |
+| `OPENAI_COMPATIBLE_API_KEY` | Gateway | OpenAI-compatible gateway (if provider requires it) |
+| `AUTH_GITHUB_ID` | Auth | If `authentication.github: true` |
+| `AUTH_GITHUB_SECRET` | Auth | If `authentication.github: true` |
+| `AUTH_GOOGLE_ID` | Auth | If `authentication.google: true` |
+| `AUTH_GOOGLE_SECRET` | Auth | If `authentication.google: true` |
+| `VERCEL_APP_CLIENT_ID` | Auth | If `authentication.vercel: true` |
+| `VERCEL_APP_CLIENT_SECRET` | Auth | If `authentication.vercel: true` |
+| `BLOB_READ_WRITE_TOKEN` | Feature | If `attachments` or `imageGeneration` enabled |
+| `TAVILY_API_KEY` | Feature | If `webSearch` enabled (one search key required) |
+| `EXA_API_KEY` | Feature | If `webSearch` enabled (one search key required) |
+| `FIRECRAWL_API_KEY` | Feature | If `webSearch` or `urlRetrieval` enabled |
+| `MCP_ENCRYPTION_KEY` | Feature | If `mcp` enabled |
+| `VERCEL_TEAM_ID` | Feature | If `sandbox` enabled on non-Vercel hosting |
+| `VERCEL_PROJECT_ID` | Feature | If `sandbox` enabled on non-Vercel hosting |
+| `VERCEL_TOKEN` | Feature | If `sandbox` enabled on non-Vercel hosting |
+| `VERCEL_SANDBOX_RUNTIME` | Feature | Optional sandbox runtime override |
+| `REDIS_URL` | Optional | Resumable streams |
+| `CRON_SECRET` | Optional | Secure cleanup cron endpoint |
+| `APP_URL` | Optional | Required on non-Vercel deployments |
+| `VERCEL_URL` | Optional | Auto-set by Vercel platform |
+| `LANGFUSE_PUBLIC_KEY` | Optional | LLM observability |
+| `LANGFUSE_SECRET_KEY` | Optional | LLM observability |
+| `LANGFUSE_BASE_URL` | Optional | Self-hosted Langfuse endpoint |
+
+## Related
+
+- [Config Reference](/reference/config) — feature flags and gateway settings in `chat.config.ts`
+- [Deploy to Vercel](/deployment/vercel) — how Vercel auto-sets several of these variables
+- [Gateways Overview](/gateways/overview) — choosing and configuring an AI gateway
+- [Authentication](/core/authentication) — OAuth provider setup details

@@ -37,6 +37,7 @@
             "pages": [
               "features/overview",
               "features/web-search",
+              "features/url-retrieval",
               "features/deep-research",
               "features/code-execution",
               "features/image-generation",
@@ -74,6 +75,8 @@
             "pages": [
               "project-structure",
               "reference/config",
+              "reference/env-vars",
+              "reference/cli",
               "reference/database",
               "reference/routing",
               "reference/testing",

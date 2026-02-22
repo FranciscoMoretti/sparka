@@ -13,7 +13,6 @@ import type { ConfigInput } from "@/lib/config-schema";
 const config: ConfigInput = {
   appName: "Your App Name",
   appPrefix: "your-app",
-  githubUrl: "https://github.com/you/your-app",
 
   organization: {
     name: "Your Company",
@@ -29,10 +28,14 @@ const config: ConfigInput = {
   },
 
   features: {
-    sandbox: true, // Code execution (Python/JS)
-    webSearch: true, // Tavily/Exa web search
-    mcp: true, // MCP connector support
-    imageGeneration: true, // AI image generation
+    sandbox: true,             // Code execution (Python/JS)
+    webSearch: true,           // Tavily/Firecrawl web search
+    urlRetrieval: true,        // Firecrawl URL content retrieval
+    deepResearch: true,        // Multi-step research agent
+    mcp: true,                 // MCP connector support
+    imageGeneration: true,     // AI image generation
+    attachments: true,         // File uploads (images, PDFs)
+    followupSuggestions: true, // Contextual follow-up questions
   },
 
   authentication: {
@@ -71,21 +74,27 @@ See [Gateways](/gateways/overview) for detailed setup and comparison.
 
 Toggle features on/off. Set to `true` to enable. Missing env vars are caught at build time via `bun run prebuild`.
 
-| Feature          | Config Key                 | Env Dependency                                                                         |
-| ---------------- | -------------------------- | -------------------------------------------------------------------------------------- |
-| Code Sandbox     | `features.sandbox`         | `VERCEL_OIDC_TOKEN` (on Vercel) or `VERCEL_TEAM_ID + VERCEL_PROJECT_ID + VERCEL_TOKEN` |
-| Web Search       | `features.webSearch`       | `TAVILY_API_KEY` or `FIRECRAWL_API_KEY`                                                |
-| MCP Connectors   | `features.mcp`             | `MCP_ENCRYPTION_KEY`                                                                   |
-| Image Generation | `features.imageGeneration` | `BLOB_READ_WRITE_TOKEN`                                                                |
-| Attachments      | `features.attachments`     | `BLOB_READ_WRITE_TOKEN`                                                                |
+| Feature               | Config Key                      | Env Dependency                                                                         |
+| --------------------- | ------------------------------- | -------------------------------------------------------------------------------------- |
+| Code Sandbox          | `features.sandbox`              | `VERCEL_OIDC_TOKEN` (on Vercel) or `VERCEL_TEAM_ID + VERCEL_PROJECT_ID + VERCEL_TOKEN` |
+| Web Search            | `features.webSearch`            | `TAVILY_API_KEY` or `FIRECRAWL_API_KEY`                                                |
+| URL Retrieval         | `features.urlRetrieval`         | `FIRECRAWL_API_KEY`                                                                    |
+| Deep Research         | `features.deepResearch`         | Requires `features.webSearch: true`                                                    |
+| MCP Connectors        | `features.mcp`                  | `MCP_ENCRYPTION_KEY`                                                                   |
+| Image Generation      | `features.imageGeneration`      | `BLOB_READ_WRITE_TOKEN`                                                                |
+| Attachments           | `features.attachments`          | `BLOB_READ_WRITE_TOKEN`                                                                |
+| Follow-up Suggestions | `features.followupSuggestions`  | None                                                                                   |
 
 ```typescript
 features: {
-  sandbox: true,         // Vercel-native, requires VERCEL_OIDC_TOKEN
-  webSearch: true,       // Requires TAVILY_API_KEY or FIRECRAWL_API_KEY
-  mcp: false,            // Requires MCP_ENCRYPTION_KEY
-  imageGeneration: true, // Requires BLOB_READ_WRITE_TOKEN
-  attachments: true,     // Requires BLOB_READ_WRITE_TOKEN
+  sandbox: true,             // Vercel-native, requires VERCEL_OIDC_TOKEN
+  webSearch: true,           // Requires TAVILY_API_KEY or FIRECRAWL_API_KEY
+  urlRetrieval: false,       // Requires FIRECRAWL_API_KEY
+  deepResearch: false,       // Requires features.webSearch: true
+  mcp: false,                // Requires MCP_ENCRYPTION_KEY
+  imageGeneration: true,     // Requires BLOB_READ_WRITE_TOKEN
+  attachments: true,         // Requires BLOB_READ_WRITE_TOKEN
+  followupSuggestions: true, // No env var required
 },
 ```
 
@@ -109,7 +118,6 @@ Customize app name and organization details:
 appName: "ChatJS",
 appTitle: "ChatJS - The prod ready AI chat app",
 appPrefix: "chatjs",
-githubUrl: "https://github.com/franciscomoretti/chat.js",
 
 organization: {
   name: "Your Company",
@@ -119,6 +127,21 @@ organization: {
   },
 },
 ```
+
+## Deep Research
+
+Configure the deep research agent pipeline:
+
+```typescript
+deepResearch: {
+  allowClarification: true,       // Ask clarifying questions before starting
+  maxResearcherIterations: 1,     // Supervisor loop iterations
+  maxConcurrentResearchUnits: 2,  // Topics researched in parallel
+  maxSearchQueries: 2,            // Queries per research topic
+},
+```
+
+See [Deep Research](/features/deep-research) for usage details.
 
 ## Using Config in Components
 
@@ -132,57 +155,4 @@ export function MyComponent() {
 }
 ```
 
-## Type Definition
-
-Full type reference:
-
-```typescript
-export type Config = {
-  models: ModelsConfig; // includes gateway: "vercel" | "openrouter" | "openai" | "openai-compatible"
-  githubUrl: string;
-  appPrefix: string;
-  appName: string;
-  /** Browser tab title (defaults to appName) */
-  appTitle?: string;
-  appDescription: string;
-  appUrl: string;
-  organization: {
-    name: string;
-    contact: {
-      privacyEmail: string;
-      legalEmail: string;
-    };
-  };
-  services: {
-    hosting: string;
-    aiProviders: string[];
-    paymentProcessors: string[];
-  };
-  features: {
-    sandbox: boolean;
-    webSearch: boolean;
-    mcp: boolean;
-    imageGeneration: boolean;
-    attachments: boolean;
-  };
-  pricing?: PricingConfig;
-  legal: {
-    minimumAge: number;
-    governingLaw: string;
-    refundPolicy: string;
-  };
-  policies: {
-    privacy: { title: string; lastUpdated?: string };
-    terms: { title: string; lastUpdated?: string };
-  };
-  authentication: {
-    google: boolean;
-    github: boolean;
-    vercel: boolean;
-  };
-  anonymous: AnonymousConfig;
-  attachments: AttachmentsConfig;
-};
-```
-
-See [Config Reference](/reference/config) for full type definitions of `ModelsConfig`, `AnonymousConfig`, and `AttachmentsConfig`.
+See [Config Reference](/reference/config) for full type definitions.

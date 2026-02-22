@@ -1,62 +1,188 @@
 ---
 title: "Authentication"
-description: "User authentication with Better Auth"
+description: "Session-based OAuth authentication with Better Auth"
 ---
 
-ChatJS uses [Better Auth](https://better-auth.com) for authentication, supporting multiple OAuth providers and anonymous guest access.
+## Overview
 
-## Configuration
+ChatJS uses [Better Auth](https://better-auth.com) for all authentication. Every user sign-in goes through an OAuth social provider — there is no email/password flow. Sessions are stored in Postgres and validated on every request via a signed cookie with a short-lived cache to reduce database load.
 
-Enable providers in `chat.config.ts`:
+The auth layer has two modes:
+
+- **Authenticated users** — signed in via GitHub, Google, or Vercel OAuth. Full access to chat history, all enabled models, and all enabled features.
+- **Anonymous users** — no sign-in required. A credit-limited, cookie-based session lets visitors try the app without an account.
+
+---
+
+## Enabling Providers
+
+Toggle providers in `chat.config.ts` under the `authentication` key:
 
 ```typescript title="chat.config.ts"
 authentication: {
-  google: false, // Requires AUTH_GOOGLE_ID + AUTH_GOOGLE_SECRET
-  github: true,  // Requires AUTH_GITHUB_ID + AUTH_GITHUB_SECRET
-  vercel: false, // Requires VERCEL_APP_CLIENT_ID + VERCEL_APP_CLIENT_SECRET
+  google: false, // requires AUTH_GOOGLE_ID + AUTH_GOOGLE_SECRET
+  github: true,  // requires AUTH_GITHUB_ID + AUTH_GITHUB_SECRET
+  vercel: false, // requires VERCEL_APP_CLIENT_ID + VERCEL_APP_CLIENT_SECRET
 },
 ```
 
-At least one provider must be enabled and configured.
+Only providers set to `true` **and** with their env vars present are registered at runtime. At least one provider must be enabled.
 
-## Environment Variables
+Config validation runs at build time via `bun run prebuild`. A missing env var for an enabled provider will fail the build early rather than causing a runtime error.
 
-| Provider | Environment Variables |
-|----------|----------------------|
-| GitHub | `AUTH_GITHUB_ID`, `AUTH_GITHUB_SECRET` |
-| Google | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` |
-| Vercel | `VERCEL_APP_CLIENT_ID`, `VERCEL_APP_CLIENT_SECRET` |
+### Required environment variables
 
-Config validation runs at build time via `bun run prebuild`. It checks that enabled providers have their required env vars set. Missing vars will fail the build.
+| Provider | Variable | Description |
+|----------|----------|-------------|
+| GitHub | `AUTH_GITHUB_ID` | OAuth App client ID |
+| GitHub | `AUTH_GITHUB_SECRET` | OAuth App client secret |
+| Google | `AUTH_GOOGLE_ID` | OAuth client ID |
+| Google | `AUTH_GOOGLE_SECRET` | OAuth client secret |
+| Vercel | `VERCEL_APP_CLIENT_ID` | Vercel integration client ID |
+| Vercel | `VERCEL_APP_CLIENT_SECRET` | Vercel integration client secret |
 
-## Anonymous Mode
+All providers also require a shared secret used to sign session tokens:
 
-Users can try the app without signing up. Anonymous sessions:
-- Have limited message credits
-- Access a subset of models and tools
-- Do not persist chat history to database
+```bash
+AUTH_SECRET=<random 32-byte base64 string>
+```
 
-Configure anonymous limits in `chat.config.ts`:
+Generate one:
+
+```bash
+openssl rand -base64 32
+# or visit https://generate-secret.vercel.app/32
+```
+
+---
+
+## Provider Setup
+
+### GitHub
+
+1. Go to **GitHub → Settings → Developer Settings → OAuth Apps → New OAuth App**.
+2. Set **Homepage URL** to your app URL (e.g. `https://your-domain.com`).
+3. Set **Authorization callback URL** to:
+   ```
+   https://your-domain.com/api/auth/callback/github
+   ```
+4. Copy the **Client ID** and generate a **Client Secret**.
+5. Add to your environment:
+   ```bash
+   AUTH_GITHUB_ID=your_client_id
+   AUTH_GITHUB_SECRET=your_client_secret
+   ```
+6. Enable in `chat.config.ts`: `authentication: { github: true }`
+
+<Note>
+For local development, create a separate GitHub OAuth App with the callback URL set to `http://localhost:3000/api/auth/callback/github`.
+</Note>
+
+---
+
+### Google
+
+1. Go to **[Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials → Create Credentials → OAuth client ID**.
+2. Choose **Web application**.
+3. Under **Authorized redirect URIs** add:
+   ```
+   https://your-domain.com/api/auth/callback/google
+   http://localhost:3000/api/auth/callback/google
+   ```
+4. Copy the **Client ID** and **Client Secret**.
+5. Add to your environment:
+   ```bash
+   AUTH_GOOGLE_ID=your_client_id
+   AUTH_GOOGLE_SECRET=your_client_secret
+   ```
+6. Enable in `chat.config.ts`: `authentication: { google: true }`
+
+<Note>
+The Google OAuth consent screen must be configured and published before users outside your Google Workspace can sign in. For testing, add yourself as a test user without publishing.
+</Note>
+
+---
+
+### Vercel
+
+1. Go to **[Vercel Dashboard](https://vercel.com/dashboard) → Settings → Integrations → Create Integration**.
+2. Under **Redirect URL** add:
+   ```
+   https://your-domain.com/api/auth/callback/vercel
+   ```
+3. Copy the **Client ID** and **Client Secret** from the integration.
+4. Add to your environment:
+   ```bash
+   VERCEL_APP_CLIENT_ID=your_client_id
+   VERCEL_APP_CLIENT_SECRET=your_client_secret
+   ```
+5. Enable in `chat.config.ts`: `authentication: { vercel: true }`
+
+<Note>
+The Vercel provider is useful when your users are Vercel teams and you want to authenticate using their Vercel account. It is off by default.
+</Note>
+
+---
+
+## Session Lifecycle
+
+1. User clicks **Continue with [Provider]** and is redirected to the provider's authorization URL.
+2. After approval, the provider redirects back to `/api/auth/callback/[provider]`.
+3. Better Auth exchanges the code for tokens, upserts the user in the database, and creates a session.
+4. A signed HttpOnly session cookie is set on the browser.
+
+Sessions are stored in Postgres. A short-lived cookie cache reduces database hits — most session validations are resolved from the cookie itself rather than a database query.
+
+---
+
+## Anonymous Users
+
+Users can start chatting without signing in. Anonymous sessions are tracked in a browser cookie rather than the database.
+
+Configure limits in `chat.config.ts`:
 
 ```typescript title="chat.config.ts"
 anonymous: {
-  credits: { production: 10, development: 1000 },
-  availableTools: ["createDocument", "updateDocument"],
+  credits: 10,             // message credits before sign-up prompt
+  availableTools: [],      // tools anonymous users can call
   rateLimit: {
-    requestsPerMinute: { production: 5, development: 60 },
-    requestsPerMonth: { production: 10, development: 1000 },
+    requestsPerMinute: 5,
+    requestsPerMonth: 10,
   },
 },
 ```
 
-Anonymous-available models are configured in `models.anonymousModels`.
+Available models for anonymous users are set separately:
 
-## Auth Secret
-
-Generate a secure `AUTH_SECRET`:
-
-```bash
-openssl rand -base64 32
+```typescript title="chat.config.ts"
+models: {
+  anonymousModels: [
+    "google/gemini-2.5-flash-lite",
+    "openai/gpt-5-nano",
+  ],
+},
 ```
 
-Or use [generate-secret.vercel.app/32](https://generate-secret.vercel.app/32).
+When credits run out or rate limits are hit, the API returns a prompt to sign up. When an anonymous user signs in, their anonymous session is cleared — prior anonymous chat history is not migrated to the database.
+
+---
+
+## Route Protection
+
+Public routes (auth callbacks, shared chats, landing pages) are accessible without signing in. All other routes redirect unauthenticated users to `/login`.
+
+The chat API is public at the middleware level — anonymous session validation and credit enforcement happen inside the route handler.
+
+---
+
+## Adding a New OAuth Provider
+
+Better Auth supports many OAuth 2.0 / OIDC providers (Discord, Twitter/X, Apple, LinkedIn, and more). To add one:
+
+1. Add it to the Better Auth config in `lib/auth.ts` with credentials from env vars.
+2. Add the new env vars to `lib/env-schema.ts`.
+3. Add a sign-in button to `components/social-auth-providers.tsx` using the Better Auth client.
+4. Register the OAuth app with the provider, setting the redirect URI to `/api/auth/callback/[provider]`.
+5. Optionally, gate it behind a new flag in `authenticationConfigSchema` in `config-schema.ts`.
+
+See the [Better Auth social providers docs](https://better-auth.com/docs/authentication/social-providers) for the full list and provider-specific options.

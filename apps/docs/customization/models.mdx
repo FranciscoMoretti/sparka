@@ -7,10 +7,15 @@ description: Add, remove, or configure AI models
 
 Configure which AI models are available in your app and how they behave. All model configuration lives in `chat.config.ts` under `config.models`.
 
+<Frame>
+  <img src="/images/ai-models.gif" alt="Selecting AI models in the chat interface" />
+</Frame>
+
 ## Configuration Options
 
 ```ts
 models: {
+  gateway: "vercel";              // "vercel" | "openrouter" | "openai" | "openai-compatible"
   providerOrder: string[];        // Provider sort order in model selector
   disabledModels: AppModelId[];   // Models hidden from all users
   curatedDefaults: AppModelId[];  // Default models enabled for new users
@@ -29,6 +34,8 @@ models: {
     codeEdits: AppModelId;
     chatImageCompatible: AppModelId;
     image: AppModelId;
+    deepResearch: AppModelId;
+    deepResearchFinalReport: AppModelId;
   };
 }
 ```
@@ -83,19 +90,21 @@ Different tasks use different models by default. This lets you optimize for cost
 
 | Task                  | Description                                                           |
 | --------------------- | --------------------------------------------------------------------- |
-| `chat`                | Main conversation model                                               |
-| `title`               | Generates chat titles                                                 |
-| `pdf`                 | PDF document analysis                                                 |
-| `artifact`            | Creates artifacts (documents, code, sheets)                           |
-| `artifactSuggestion`  | Suggests artifact improvements                                        |
-| `followupSuggestions` | Generates follow-up questions                                         |
-| `suggestions`         | General suggestions                                                   |
-| `polishText`          | Text refinement                                                       |
-| `formatSheet`         | Spreadsheet formatting                                                |
-| `analyzeSheet`        | Spreadsheet analysis                                                  |
-| `codeEdits`           | Code modifications                                                    |
-| `chatImageCompatible` | Chat with image input support                                         |
-| `image`               | Image generation (see [Image Generation](/features/image-generation)) |
+| `chat`                      | Main conversation model                                               |
+| `title`                     | Generates chat titles                                                 |
+| `pdf`                       | PDF document analysis                                                 |
+| `artifact`                  | Creates artifacts (documents, code, sheets)                           |
+| `artifactSuggestion`        | Suggests artifact improvements                                        |
+| `followupSuggestions`       | Generates follow-up questions                                         |
+| `suggestions`               | General suggestions                                                   |
+| `polishText`                | Text refinement                                                       |
+| `formatSheet`               | Spreadsheet formatting                                                |
+| `analyzeSheet`              | Spreadsheet analysis                                                  |
+| `codeEdits`                 | Code modifications                                                    |
+| `chatImageCompatible`       | Chat with image input support                                         |
+| `image`                     | Image generation (see [Image Generation](/features/image-generation)) |
+| `deepResearch`              | Research and supervision agent (see [Deep Research](/features/deep-research)) |
+| `deepResearchFinalReport`   | Final report synthesis for deep research                              |
 
 ## AI Providers
 

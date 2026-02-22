@@ -10,6 +10,17 @@ Before you begin, make sure you have:
 - **Node.js 20+** ([download](https://nodejs.org))
 - A package manager: **npm**, **yarn**, **pnpm**, or **bun**
 
+### 1. Create Your Project
+
+Scaffold a new ChatJS app using the CLI:
+
+```bash
+npx @chat-js/cli@latest create my-app
+cd my-app
+```
+
+The CLI walks you through selecting your AI gateway, features, and auth providers, then generates a configured project with `chat.config.ts` ready to go. It automatically detects your package manager and creates the appropriate lock file.
+
 ## Understanding `chat.config.ts`
 
 The `chat.config.ts` file controls all feature toggles, branding, and app settings. It's generated with sensible defaults when you scaffold a project with the CLI.
@@ -30,17 +41,6 @@ This keeps your initial setup simple — the CLI will tell you exactly which env
 Enable features incrementally by editing `chat.config.ts` and adding the required environment variables. See [Configuration](/core/configuration) for details.
 
 </Accordion>
-
-### 1. Create Your Project
-
-Scaffold a new ChatJS app using the CLI:
-
-```bash
-npx @chat-js/cli@latest create my-app
-cd my-app
-```
-
-The CLI walks you through selecting your AI gateway, features, and auth providers, then generates a configured project with `chat.config.ts` ready to go. It automatically detects your package manager and creates the appropriate lock file.
 
 ### 2. Configure Environment Variables
 

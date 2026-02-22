@@ -1,0 +1,93 @@
+---
+title: URL Retrieval
+description: Fetch and extract structured content from any URL
+---
+
+## Overview
+
+URL Retrieval lets the AI read the content of a specific URL the user shares in chat. Powered by [Firecrawl](https://firecrawl.dev), it scrapes the page and returns clean markdown — title, description, and body — injected directly into the AI's context.
+
+This is distinct from [Web Search](/features/web-search): URL Retrieval fetches a known URL, while Web Search queries the web to discover relevant pages.
+
+## Quick Start
+
+Enable URL Retrieval in `chat.config.ts`:
+
+```ts
+features: {
+  urlRetrieval: true, // Requires FIRECRAWL_API_KEY
+}
+```
+
+Add the API key to your environment:
+
+```bash
+FIRECRAWL_API_KEY=your_firecrawl_key
+```
+
+## How It Works
+
+When a user pastes a URL into the chat, the AI invokes the `retrieveUrl` tool automatically. The tool:
+
+1. Calls the Firecrawl `scrapeUrl` API on the provided URL
+2. Extracts the page title, description, and body as clean markdown
+3. Falls back to Firecrawl's `extract` API if any field is missing from the scrape response
+4. Returns the structured result into the AI's context
+
+The AI then answers questions or summarizes the page content based on what was retrieved.
+
+<Note>
+  URL Retrieval does not stream intermediate results. The AI waits for Firecrawl
+  to return content before generating a response.
+</Note>
+
+## Usage
+
+Paste any URL directly in the chat message:
+
+> "Summarize https://example.com/article"
+
+> "What does this page say about pricing? https://example.com/pricing"
+
+The AI will read the page and respond based on its content. No special syntax is required — the model invokes the tool when it determines a URL is present and content retrieval is appropriate.
+
+### Tool Output
+
+The tool returns a structured result:
+
+```ts
+{
+  results: [
+    {
+      title: "Page Title",
+      description: "Brief description from page metadata",
+      content: "Full page body as clean markdown...",
+      url: "https://example.com/article",
+      language: "en",
+    },
+  ];
+}
+```
+
+## Configuration
+
+| Setting          | Value                          |
+| ---------------- | ------------------------------ |
+| Config key       | `features.urlRetrieval`        |
+| Required env var | `FIRECRAWL_API_KEY`            |
+| Tool name        | `retrieveUrl`                  |
+| Tool file        | `lib/ai/tools/retrieve-url.ts` |
+
+### Customization
+
+The tool description controls when the AI decides to invoke it. Edit `lib/ai/tools/retrieve-url.ts` to adjust:
+
+```ts
+description: `Fetch structured information from a single URL via Firecrawl.
+
+Use for:
+- Extract content from a specific URL supplied by the user
+
+Avoid:
+- General-purpose web searches`,
+```
