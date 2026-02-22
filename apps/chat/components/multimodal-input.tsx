@@ -150,7 +150,7 @@ function PureMultimodalInput({
 
   // Helper function to auto-switch to PDF-compatible model
   const switchToPdfCompatibleModel = useCallback(() => {
-    const pdfModel = config.models.defaults.pdf;
+    const pdfModel = config.ai.workflows.pdf;
     const defaultPdfModelDef = getModelById(pdfModel);
     if (defaultPdfModelDef) {
       toast.success(`Switched to ${defaultPdfModelDef.name} (supports PDF)`);
@@ -161,7 +161,7 @@ function PureMultimodalInput({
 
   // Helper function to auto-switch to image-compatible model
   const switchToImageCompatibleModel = useCallback(() => {
-    const imageModel = config.models.defaults.chatImageCompatible;
+    const imageModel = config.ai.workflows.chatImageCompatible;
     const defaultImageModelDef = getModelById(imageModel);
     if (defaultImageModelDef) {
       toast.success(

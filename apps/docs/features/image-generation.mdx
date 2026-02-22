@@ -16,8 +16,12 @@ Generate images directly in chat using AI models. Supports both generation from 
 Toggle in `chat.config.ts`:
 
 ```ts
-features: {
-  imageGeneration: true, // Requires BLOB_READ_WRITE_TOKEN
+ai: {
+  tools: {
+    image: {
+      enabled: true, // Requires BLOB_READ_WRITE_TOKEN
+    },
+  },
 }
 ```
 
@@ -29,9 +33,11 @@ features: {
 Configure the default image model:
 
 ```ts
-models: {
-  defaults: {
-    image: "google/gemini-3-pro-image",
+ai: {
+  tools: {
+    image: {
+      default: "google/gemini-3-pro-image",
+    },
   },
 }
 ```
@@ -161,9 +167,11 @@ The generated image is uploaded to blob storage and the URL returned.
 ### Image Model
 
 ```ts title="chat.config.ts"
-models: {
-  defaults: {
-    image: "google/gemini-3-pro-image",
+ai: {
+  tools: {
+    image: {
+      default: "google/gemini-3-pro-image",
+    },
   },
 }
 ```
@@ -180,7 +188,7 @@ The tool supports two types of models:
 Model selection is done in `resolveImageModel(selectedModel)` in `lib/ai/tools/generate-image.ts`:
 
 1. If the user's selected chat model supports image output (per app model registry, `model.output.image`), use it
-2. Otherwise, fall back to `config.models.defaults.image`
+2. Otherwise, fall back to `config.ai.tools.image.default`
 
 ### Image Model vs Multimodal Generation
 

@@ -11,7 +11,7 @@ const anonConfig = config.anonymous;
 
 export const ANONYMOUS_LIMITS = {
   CREDITS: anonConfig.credits,
-  AVAILABLE_MODELS: config.models.anonymousModels,
+  AVAILABLE_MODELS: config.ai.anonymousModels,
   AVAILABLE_TOOLS: anonConfig.availableTools as ToolName[],
   SESSION_DURATION: 2_147_483_647, // Max session time
   RATE_LIMIT: {

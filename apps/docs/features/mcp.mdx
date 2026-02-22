@@ -12,8 +12,12 @@ description: Connect Model Context Protocol servers to extend AI capabilities
 Enable MCP in `chat.config.ts`:
 
 ```typescript
-features: {
-  mcp: true, // Requires MCP_ENCRYPTION_KEY
+ai: {
+  tools: {
+    mcp: {
+      enabled: true, // Requires MCP_ENCRYPTION_KEY
+    },
+  },
 }
 ```
 
@@ -39,8 +43,12 @@ Enable the integration:
 import type { ConfigInput } from "@/lib/config-schema";
 
 const config: ConfigInput = {
-  features: {
-    mcp: true, // Requires MCP_ENCRYPTION_KEY
+  ai: {
+    tools: {
+      mcp: {
+        enabled: true, // Requires MCP_ENCRYPTION_KEY
+      },
+    },
   },
   // ... rest of config
 };

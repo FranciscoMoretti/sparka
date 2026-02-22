@@ -45,15 +45,7 @@ const config = {
     paymentProcessors: [],
   },
   features: {
-    sandbox: true, // Vercel-native, no key needed
-    webSearch: true, // Requires TAVILY_API_KEY or FIRECRAWL_API_KEY
-    urlRetrieval: true, // Requires FIRECRAWL_API_KEY
-    deepResearch: true, // Requires webSearch
-    mcp: true, // Requires MCP_ENCRYPTION_KEY
-    imageGeneration: true, // Requires BLOB_READ_WRITE_TOKEN
-    videoGeneration: true, // Requires BLOB_READ_WRITE_TOKEN
     attachments: true, // Requires BLOB_READ_WRITE_TOKEN
-    followupSuggestions: true,
   },
   legal: {
     minimumAge: 13,
@@ -75,7 +67,7 @@ const config = {
     github: true, // Requires AUTH_GITHUB_ID + AUTH_GITHUB_SECRET
     vercel: true, // Requires VERCEL_APP_CLIENT_ID + VERCEL_APP_CLIENT_SECRET
   },
-  models: {
+  ai: {
     gateway: "vercel",
     providerOrder: ["openai", "google", "anthropic", "xai"],
     disabledModels: ["morph/morph-v3-large", "morph/morph-v3-fast"],
@@ -101,23 +93,56 @@ const config = {
       "openai/gpt-5-nano",
       "anthropic/claude-haiku-4.5",
     ],
-    defaults: {
+    workflows: {
       chat: "openai/gpt-5-mini",
       title: "openai/gpt-5-nano",
       pdf: "openai/gpt-5-mini",
-      artifact: "openai/gpt-5-nano",
-      artifactSuggestion: "openai/gpt-5-mini",
-      followupSuggestions: "openai/gpt-5-nano",
-      suggestions: "openai/gpt-5-mini",
-      polishText: "openai/gpt-5-mini",
-      formatSheet: "openai/gpt-5-mini",
-      analyzeSheet: "openai/gpt-5-mini",
-      codeEdits: "openai/gpt-5-mini",
       chatImageCompatible: "openai/gpt-4o-mini",
-      image: "google/gemini-3-pro-image",
-      video: "xai/grok-imagine-video",
-      deepResearch: "google/gemini-2.5-flash-lite",
-      deepResearchFinalReport: "google/gemini-3-flash",
+    },
+    tools: {
+      webSearch: {
+        enabled: true, // Requires TAVILY_API_KEY or FIRECRAWL_API_KEY
+      },
+      urlRetrieval: {
+        enabled: true, // Requires FIRECRAWL_API_KEY
+      },
+      codeExecution: {
+        enabled: true, // Vercel-native, no key needed
+      },
+      mcp: {
+        enabled: true, // Requires MCP_ENCRYPTION_KEY
+      },
+      followupSuggestions: {
+        enabled: true,
+        default: "openai/gpt-5-nano",
+      },
+      text: {
+        polish: "openai/gpt-5-mini",
+      },
+      sheet: {
+        format: "openai/gpt-5-mini",
+        analyze: "openai/gpt-5-mini",
+      },
+      code: {
+        edits: "openai/gpt-5-mini",
+      },
+      image: {
+        enabled: true, // Requires BLOB_READ_WRITE_TOKEN
+        default: "google/gemini-3-pro-image",
+      },
+      video: {
+        enabled: true, // Requires BLOB_READ_WRITE_TOKEN
+        default: "xai/grok-imagine-video",
+      },
+      deepResearch: {
+        enabled: true, // Requires webSearch
+        defaultModel: "google/gemini-2.5-flash-lite",
+        finalReportModel: "google/gemini-3-flash",
+        allowClarification: true,
+        maxResearcherIterations: 1,
+        maxConcurrentResearchUnits: 2,
+        maxSearchQueries: 2,
+      },
     },
   },
   anonymous: {

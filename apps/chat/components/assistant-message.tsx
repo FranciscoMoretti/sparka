@@ -48,7 +48,7 @@ const PureAssistantMessage = ({
           key={`action-${messageId}`}
           messageId={messageId}
         />
-        {isReadonly || !config.features.followupSuggestions ? null : (
+        {isReadonly || !config.ai.tools.followupSuggestions.enabled ? null : (
           <FollowUpSuggestionsParts messageId={messageId} />
         )}
       </MessageContent>

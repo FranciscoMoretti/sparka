@@ -13,7 +13,7 @@ const DEFAULT_GATEWAY = "vercel" as const satisfies GatewayType;
 const toolName = () => z.custom<ToolName>();
 
 // =====================================================
-// Models config — discriminated union keyed on gateway
+// AI config — discriminated union keyed on gateway
 // =====================================================
 
 function gatewayModelId<G extends GatewayType>() {
@@ -28,7 +28,34 @@ function gatewayVideoModelId<G extends GatewayType>() {
   return z.custom<GatewayVideoModelIdMap[G]>((v) => typeof v === "string");
 }
 
-function createModelsSchema<G extends GatewayType>(g: G) {
+const deepResearchToolConfigSchema = z
+  .object({
+    defaultModel: z.string(),
+    finalReportModel: z.string(),
+    allowClarification: z
+      .boolean()
+      .describe("Whether to ask clarifying questions before starting research"),
+    maxResearcherIterations: z
+      .number()
+      .int()
+      .min(1)
+      .max(10)
+      .describe("Maximum supervisor loop iterations"),
+    maxConcurrentResearchUnits: z
+      .number()
+      .int()
+      .min(1)
+      .max(20)
+      .describe("Topics researched in parallel per iteration"),
+    maxSearchQueries: z
+      .number()
+      .int()
+      .min(1)
+      .max(10)
+      .describe("Max search queries per research topic"),
+  });
+
+function createAiSchema<G extends GatewayType>(g: G) {
   return z.object({
     gateway: z.literal(g),
     providerOrder: z
@@ -43,40 +70,71 @@ function createModelsSchema<G extends GatewayType>(g: G) {
     anonymousModels: z
       .array(gatewayModelId<G>())
       .describe("Models available to anonymous users"),
-    defaults: z
+    workflows: z
       .object({
         chat: gatewayModelId<G>(),
         title: gatewayModelId<G>(),
         pdf: gatewayModelId<G>(),
-        artifact: gatewayModelId<G>(),
-        artifactSuggestion: gatewayModelId<G>(),
-        followupSuggestions: gatewayModelId<G>(),
-        suggestions: gatewayModelId<G>(),
-        polishText: gatewayModelId<G>(),
-        formatSheet: gatewayModelId<G>(),
-        analyzeSheet: gatewayModelId<G>(),
-        codeEdits: gatewayModelId<G>(),
         chatImageCompatible: gatewayModelId<G>(),
-        image: gatewayImageModelId<G>(),
-        video: gatewayVideoModelId<G>(),
-        deepResearch: gatewayModelId<G>(),
-        deepResearchFinalReport: gatewayModelId<G>(),
       })
-      .describe("Default model for each task type"),
+      .describe("Default model for shared app workflows"),
+    tools: z
+      .object({
+        webSearch: z.object({
+          enabled: z.boolean(),
+        }),
+        urlRetrieval: z.object({
+          enabled: z.boolean(),
+        }),
+        codeExecution: z.object({
+          enabled: z.boolean(),
+        }),
+        mcp: z.object({
+          enabled: z.boolean(),
+        }),
+        followupSuggestions: z.object({
+          enabled: z.boolean(),
+          default: gatewayModelId<G>(),
+        }),
+        text: z.object({
+          polish: gatewayModelId<G>(),
+        }),
+        sheet: z.object({
+          format: gatewayModelId<G>(),
+          analyze: gatewayModelId<G>(),
+        }),
+        code: z.object({
+          edits: gatewayModelId<G>(),
+        }),
+        image: z.object({
+          enabled: z.boolean(),
+          default: gatewayImageModelId<G>(),
+        }),
+        video: z.object({
+          enabled: z.boolean(),
+          default: gatewayVideoModelId<G>(),
+        }),
+        deepResearch: deepResearchToolConfigSchema.extend({
+          enabled: z.boolean(),
+          defaultModel: gatewayModelId<G>(),
+          finalReportModel: gatewayModelId<G>(),
+        }),
+      })
+      .describe("Default model and runtime configuration grouped by tool"),
   });
 }
 
 // Record ensures a compile error if a new gateway is added but not here.
 const gatewaySchemaMap: {
-  [G in GatewayType]: ReturnType<typeof createModelsSchema<G>>;
+  [G in GatewayType]: ReturnType<typeof createAiSchema<G>>;
 } = {
-  vercel: createModelsSchema("vercel"),
-  openrouter: createModelsSchema("openrouter"),
-  openai: createModelsSchema("openai"),
-  "openai-compatible": createModelsSchema("openai-compatible"),
+  vercel: createAiSchema("vercel"),
+  openrouter: createAiSchema("openrouter"),
+  openai: createAiSchema("openai"),
+  "openai-compatible": createAiSchema("openai-compatible"),
 };
 
-export const modelsConfigSchema = z
+export const aiConfigSchema = z
   .discriminatedUnion("gateway", [
     gatewaySchemaMap.vercel,
     gatewaySchemaMap.openrouter,
@@ -105,23 +163,56 @@ export const modelsConfigSchema = z
       "xai/grok-4",
     ],
     anonymousModels: ["google/gemini-2.5-flash-lite", "openai/gpt-5-nano"],
-    defaults: {
+    workflows: {
       chat: "openai/gpt-5-mini",
       title: "openai/gpt-5-nano",
       pdf: "openai/gpt-5-mini",
-      artifact: "openai/gpt-5-nano",
-      artifactSuggestion: "openai/gpt-5-mini",
-      followupSuggestions: "google/gemini-2.5-flash-lite",
-      suggestions: "openai/gpt-5-mini",
-      polishText: "openai/gpt-5-mini",
-      formatSheet: "openai/gpt-5-mini",
-      analyzeSheet: "openai/gpt-5-mini",
-      codeEdits: "openai/gpt-5-mini",
       chatImageCompatible: "openai/gpt-4o-mini",
-      image: "google/gemini-3-pro-image",
-      video: "xai/grok-imagine-video",
-      deepResearch: "google/gemini-2.5-flash-lite",
-      deepResearchFinalReport: "google/gemini-3-flash",
+    },
+    tools: {
+      webSearch: {
+        enabled: false,
+      },
+      urlRetrieval: {
+        enabled: false,
+      },
+      codeExecution: {
+        enabled: false,
+      },
+      mcp: {
+        enabled: false,
+      },
+      followupSuggestions: {
+        enabled: false,
+        default: "google/gemini-2.5-flash-lite",
+      },
+      text: {
+        polish: "openai/gpt-5-mini",
+      },
+      sheet: {
+        format: "openai/gpt-5-mini",
+        analyze: "openai/gpt-5-mini",
+      },
+      code: {
+        edits: "openai/gpt-5-mini",
+      },
+      image: {
+        enabled: false,
+        default: "google/gemini-3-pro-image",
+      },
+      video: {
+        enabled: false,
+        default: "xai/grok-imagine-video",
+      },
+      deepResearch: {
+        enabled: false,
+        defaultModel: "google/gemini-2.5-flash-lite",
+        finalReportModel: "google/gemini-3-flash",
+        allowClarification: true,
+        maxResearcherIterations: 1,
+        maxConcurrentResearchUnits: 2,
+        maxSearchQueries: 2,
+      },
     },
   });
 
@@ -186,71 +277,14 @@ export const attachmentsConfigSchema = z
     },
   });
 
-export const deepResearchConfigSchema = z
-  .object({
-    allowClarification: z
-      .boolean()
-      .describe("Whether to ask clarifying questions before starting research"),
-    maxResearcherIterations: z
-      .number()
-      .int()
-      .min(1)
-      .max(10)
-      .describe("Maximum supervisor loop iterations"),
-    maxConcurrentResearchUnits: z
-      .number()
-      .int()
-      .min(1)
-      .max(20)
-      .describe("Topics researched in parallel per iteration"),
-    maxSearchQueries: z
-      .number()
-      .int()
-      .min(1)
-      .max(10)
-      .describe("Max search queries per research topic"),
-  })
-  .default({
-    allowClarification: true,
-    maxResearcherIterations: 1,
-    maxConcurrentResearchUnits: 2,
-    maxSearchQueries: 2,
-  });
-
 export const featuresConfigSchema = z
   .object({
-    sandbox: z.boolean().describe("Code sandbox execution (Vercel-native)"),
-    webSearch: z.boolean().describe("Web search (requires TAVILY_API_KEY)"),
-    urlRetrieval: z
-      .boolean()
-      .describe("URL content retrieval (requires FIRECRAWL_API_KEY)"),
-    deepResearch: z
-      .boolean()
-      .describe("Deep research agent (requires webSearch)"),
-    mcp: z.boolean().describe("MCP tool servers (requires MCP_ENCRYPTION_KEY)"),
-    imageGeneration: z
-      .boolean()
-      .describe("AI image generation (requires BLOB_READ_WRITE_TOKEN)"),
-    videoGeneration: z
-      .boolean()
-      .describe("AI video generation (requires BLOB_READ_WRITE_TOKEN)"),
     attachments: z
       .boolean()
       .describe("File attachments (requires BLOB_READ_WRITE_TOKEN)"),
-    followupSuggestions: z
-      .boolean()
-      .describe("Follow-up question suggestions after AI responses"),
   })
   .default({
-    sandbox: false,
-    webSearch: false,
-    urlRetrieval: false,
-    deepResearch: false,
-    mcp: false,
-    imageGeneration: false,
-    videoGeneration: false,
     attachments: false,
-    followupSuggestions: false,
   });
 
 export const authenticationConfigSchema = z
@@ -345,22 +379,20 @@ export const configSchema = z.object({
 
   authentication: authenticationConfigSchema,
 
-  models: modelsConfigSchema,
+  ai: aiConfigSchema,
 
   anonymous: anonymousConfigSchema,
 
   attachments: attachmentsConfigSchema,
 
-  deepResearch: deepResearchConfigSchema,
 });
 
 // Output types (after defaults applied)
 export type Config = z.infer<typeof configSchema>;
 export type PricingConfig = z.infer<typeof pricingConfigSchema>;
-export type ModelsConfig = z.infer<typeof modelsConfigSchema>;
+export type AiConfig = z.infer<typeof aiConfigSchema>;
 export type AnonymousConfig = z.infer<typeof anonymousConfigSchema>;
 export type AttachmentsConfig = z.infer<typeof attachmentsConfigSchema>;
-export type DeepResearchConfig = z.infer<typeof deepResearchConfigSchema>;
 export type FeaturesConfig = z.infer<typeof featuresConfigSchema>;
 export type AuthenticationConfig = z.infer<typeof authenticationConfigSchema>;
 
@@ -368,29 +400,72 @@ export type AuthenticationConfig = z.infer<typeof authenticationConfigSchema>;
 type ZodConfigInput = z.input<typeof configSchema>;
 
 // Use vercel variant as shape reference (all variants share the same structure)
-type ModelsShape = z.input<typeof gatewaySchemaMap.vercel>;
+type AiShape = z.input<typeof gatewaySchemaMap.vercel>;
+type AiToolsShape = AiShape["tools"];
+type DeepResearchToolInputFor<G extends GatewayType> = Omit<
+  AiToolsShape["deepResearch"],
+  "defaultModel" | "finalReportModel"
+> & {
+  defaultModel: GatewayModelIdMap[G];
+  finalReportModel: GatewayModelIdMap[G];
+};
+type ImageToolInputFor<G extends GatewayType> = Omit<
+  AiToolsShape["image"],
+  "default"
+> & {
+  default: GatewayImageModelIdMap[G];
+};
+type VideoToolInputFor<G extends GatewayType> = Omit<
+  AiToolsShape["video"],
+  "default"
+> & {
+  default: GatewayVideoModelIdMap[G];
+};
+type FollowupSuggestionsToolInputFor<G extends GatewayType> = Omit<
+  AiToolsShape["followupSuggestions"],
+  "default"
+> & {
+  default: GatewayModelIdMap[G];
+};
+type AiToolsInputFor<G extends GatewayType> = {
+  webSearch: AiToolsShape["webSearch"];
+  urlRetrieval: AiToolsShape["urlRetrieval"];
+  codeExecution: AiToolsShape["codeExecution"];
+  mcp: AiToolsShape["mcp"];
+  followupSuggestions: FollowupSuggestionsToolInputFor<G>;
+  text: {
+    [P in keyof AiToolsShape["text"]]: GatewayModelIdMap[G];
+  };
+  sheet: {
+    [P in keyof AiToolsShape["sheet"]]: GatewayModelIdMap[G];
+  };
+  code: {
+    [P in keyof AiToolsShape["code"]]: GatewayModelIdMap[G];
+  };
+  image: ImageToolInputFor<G>;
+  video: VideoToolInputFor<G>;
+  deepResearch: DeepResearchToolInputFor<G>;
+};
 
-type ModelsInputFor<G extends GatewayType> = {
-  [K in keyof ModelsShape]: K extends "gateway"
+type AiInputFor<G extends GatewayType> = {
+  [K in keyof AiShape]: K extends "gateway"
     ? G
-    : K extends "defaults"
+    : K extends "workflows"
       ? {
-          [D in keyof ModelsShape["defaults"]]: D extends "image"
-            ? GatewayImageModelIdMap[G]
-            : D extends "video"
-              ? GatewayVideoModelIdMap[G]
-              : GatewayModelIdMap[G];
+          [W in keyof AiShape["workflows"]]: GatewayModelIdMap[G];
         }
+      : K extends "tools"
+        ? AiToolsInputFor<G>
       : K extends "disabledModels" | "curatedDefaults" | "anonymousModels"
         ? GatewayModelIdMap[G][]
-        : ModelsShape[K];
+        : AiShape[K];
 };
 
 type ConfigInputForGateway<G extends GatewayType> = Omit<
   ZodConfigInput,
-  "models"
+  "ai"
 > & {
-  models?: ModelsInputFor<G>;
+  ai?: AiInputFor<G>;
 };
 
 export type ConfigInput = {

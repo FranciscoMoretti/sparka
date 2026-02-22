@@ -16,8 +16,12 @@ Execute Python code in a secure sandboxed environment directly from chat. The sa
 Enable code execution in `chat.config.ts`:
 
 ```ts
-features: {
-  sandbox: true, // Vercel-native, no key needed
+ai: {
+  tools: {
+    codeExecution: {
+      enabled: true, // Vercel-native, no key needed
+    },
+  },
 }
 ```
 

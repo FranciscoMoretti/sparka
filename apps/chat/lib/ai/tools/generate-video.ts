@@ -48,7 +48,7 @@ async function resolveVideoModel(selectedModel?: string): Promise<string> {
       // Not in app models registry, fall through
     }
   }
-  return config.models.defaults.video;
+  return config.ai.tools.video.default;
 }
 
 export const generateVideoTool = ({

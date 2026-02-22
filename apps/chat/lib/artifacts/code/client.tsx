@@ -257,7 +257,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
             },
           ],
           metadata: {
-            selectedModel: config.models.defaults.codeEdits,
+            selectedModel: config.ai.tools.code.edits,
             createdAt: new Date(),
             parentMessageId: storeApi.getState().getLastMessageId(),
             activeStreamId: null,
@@ -278,7 +278,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
             },
           ],
           metadata: {
-            selectedModel: config.models.defaults.codeEdits,
+            selectedModel: config.ai.tools.code.edits,
             createdAt: new Date(),
             parentMessageId: storeApi.getState().getLastMessageId(),
             activeStreamId: null,

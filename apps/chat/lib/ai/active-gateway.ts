@@ -13,7 +13,7 @@ export function getActiveGateway(): GatewayProvider {
     return activeGateway;
   }
 
-  const gatewayType: GatewayType = config.models.gateway ?? DEFAULT_GATEWAY;
+  const gatewayType: GatewayType = config.ai.gateway ?? DEFAULT_GATEWAY;
 
   const factory = gatewayRegistry[gatewayType];
   if (!factory) {

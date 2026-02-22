@@ -46,33 +46,36 @@ function getSearchApi(): SearchAPI {
 }
 
 export function getDeepResearchConfig(): DeepResearchRuntimeConfig {
-  const deepResearchModel = config.models.defaults.deepResearch;
-  const deepResearchFinalReportModel =
-    config.models.defaults.deepResearchFinalReport;
-  const deepResearchSettings = config.deepResearch;
+  const {
+    defaultModel,
+    finalReportModel,
+    allowClarification,
+    maxConcurrentResearchUnits,
+    maxSearchQueries,
+    maxResearcherIterations,
+  } = config.ai.tools.deepResearch;
 
   return {
     // General Configuration
     max_structured_output_retries: 3,
-    allow_clarification: deepResearchSettings.allowClarification,
-    max_concurrent_research_units:
-      deepResearchSettings.maxConcurrentResearchUnits,
+    allow_clarification: allowClarification,
+    max_concurrent_research_units: maxConcurrentResearchUnits,
 
     // Research Configuration
     search_api: getSearchApi(),
-    search_api_max_queries: deepResearchSettings.maxSearchQueries,
-    max_researcher_iterations: deepResearchSettings.maxResearcherIterations,
+    search_api_max_queries: maxSearchQueries,
+    max_researcher_iterations: maxResearcherIterations,
 
     // Model Configuration - use same model for research/compression/summarization
-    summarization_model: deepResearchModel,
+    summarization_model: defaultModel,
     summarization_model_max_tokens: 4000,
-    research_model: deepResearchModel,
+    research_model: defaultModel,
     research_model_max_tokens: 4000,
-    compression_model: deepResearchModel,
+    compression_model: defaultModel,
     compression_model_max_tokens: 4000,
-    final_report_model: deepResearchFinalReportModel,
+    final_report_model: finalReportModel,
     final_report_model_max_tokens: 6000,
-    status_update_model: deepResearchModel,
+    status_update_model: defaultModel,
     status_update_model_max_tokens: 4000,
   };
 }

@@ -15,8 +15,8 @@ export type AppModelDefinition = Omit<ModelData, "id"> & {
   apiModelId: ModelId;
 };
 
-const DISABLED_MODELS = new Set(config.models.disabledModels);
-const PROVIDER_ORDER = config.models.providerOrder;
+const DISABLED_MODELS = new Set(config.ai.disabledModels);
+const PROVIDER_ORDER = config.ai.providerOrder;
 
 function buildAppModels(models: ModelData[]): AppModelDefinition[] {
   return models
@@ -116,7 +116,7 @@ export async function getAppModelDefinition(
  * so we fall back to an empty set (which auto-enables all models).
  */
 const KNOWN_MODEL_IDS = new Set<string>(
-  generatedForGateway === config.models.gateway
+  generatedForGateway === config.ai.gateway
     ? generatedModels.map((m) => m.id)
     : []
 );
@@ -128,7 +128,7 @@ const KNOWN_MODEL_IDS = new Set<string>(
 export function getDefaultEnabledModels(
   appModels: AppModelDefinition[]
 ): Set<AppModelId> {
-  const enabled = new Set<AppModelId>(config.models.curatedDefaults);
+  const enabled = new Set<AppModelId>(config.ai.curatedDefaults);
 
   // If a curated default has a -reasoning variant, enable it too
   for (const model of appModels) {

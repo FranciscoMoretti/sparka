@@ -128,7 +128,7 @@ export const textArtifact = new Artifact<"text">({
             },
           ],
           metadata: {
-            selectedModel: config.models.defaults.polishText,
+            selectedModel: config.ai.tools.text.polish,
             createdAt: new Date(),
             parentMessageId: storeApi.getState().getLastMessageId(),
             activeStreamId: null,

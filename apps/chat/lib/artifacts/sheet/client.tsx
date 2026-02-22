@@ -87,7 +87,7 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
             { type: "text", text: "Can you please format and clean the data?" },
           ],
           metadata: {
-            selectedModel: config.models.defaults.formatSheet,
+            selectedModel: config.ai.tools.sheet.format,
             createdAt: new Date(),
             parentMessageId: storeApi.getState().getLastMessageId(),
             activeStreamId: null,
@@ -108,7 +108,7 @@ export const sheetArtifact = new Artifact<"sheet", Metadata>({
             },
           ],
           metadata: {
-            selectedModel: config.models.defaults.analyzeSheet,
+            selectedModel: config.ai.tools.sheet.analyze,
             createdAt: new Date(),
             parentMessageId: storeApi.getState().getLastMessageId(),
             activeStreamId: null,

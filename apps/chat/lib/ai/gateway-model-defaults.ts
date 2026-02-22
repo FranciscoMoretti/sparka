@@ -5,22 +5,52 @@ type ModelDefaults = {
   disabledModels: string[];
   curatedDefaults: string[];
   anonymousModels: string[];
-  defaults: {
+  workflows: {
     chat: string;
     title: string;
     pdf: string;
-    artifact: string;
-    artifactSuggestion: string;
-    followupSuggestions: string;
-    suggestions: string;
-    polishText: string;
-    formatSheet: string;
-    analyzeSheet: string;
-    codeEdits: string;
     chatImageCompatible: string;
-    image: string;
-    deepResearch: string;
-    deepResearchFinalReport: string;
+  };
+  tools: {
+    webSearch: {
+      enabled: boolean;
+    };
+    urlRetrieval: {
+      enabled: boolean;
+    };
+    codeExecution: {
+      enabled: boolean;
+    };
+    mcp: {
+      enabled: boolean;
+    };
+    followupSuggestions: {
+      enabled: boolean;
+      default: string;
+    };
+    text: {
+      polish: string;
+    };
+    sheet: {
+      format: string;
+      analyze: string;
+    };
+    code: {
+      edits: string;
+    };
+    image: {
+      enabled: boolean;
+      default: string;
+    };
+    deepResearch: {
+      enabled: boolean;
+      defaultModel: string;
+      finalReportModel: string;
+      allowClarification: boolean;
+      maxResearcherIterations: number;
+      maxConcurrentResearchUnits: number;
+      maxSearchQueries: number;
+    };
   };
 };
 
@@ -40,22 +70,52 @@ const multiProviderDefaults = {
     "xai/grok-4",
   ],
   anonymousModels: ["google/gemini-2.5-flash-lite", "openai/gpt-5-nano"],
-  defaults: {
+  workflows: {
     chat: "openai/gpt-5-mini",
     title: "openai/gpt-5-nano",
     pdf: "openai/gpt-5-mini",
-    artifact: "openai/gpt-5-nano",
-    artifactSuggestion: "openai/gpt-5-mini",
-    followupSuggestions: "google/gemini-2.5-flash-lite",
-    suggestions: "openai/gpt-5-mini",
-    polishText: "openai/gpt-5-mini",
-    formatSheet: "openai/gpt-5-mini",
-    analyzeSheet: "openai/gpt-5-mini",
-    codeEdits: "openai/gpt-5-mini",
     chatImageCompatible: "openai/gpt-4o-mini",
-    image: "google/gemini-3-pro-image",
-    deepResearch: "google/gemini-2.5-flash-lite",
-    deepResearchFinalReport: "google/gemini-3-flash",
+  },
+  tools: {
+    webSearch: {
+      enabled: false,
+    },
+    urlRetrieval: {
+      enabled: false,
+    },
+    codeExecution: {
+      enabled: false,
+    },
+    mcp: {
+      enabled: false,
+    },
+    followupSuggestions: {
+      enabled: false,
+      default: "google/gemini-2.5-flash-lite",
+    },
+    text: {
+      polish: "openai/gpt-5-mini",
+    },
+    sheet: {
+      format: "openai/gpt-5-mini",
+      analyze: "openai/gpt-5-mini",
+    },
+    code: {
+      edits: "openai/gpt-5-mini",
+    },
+    image: {
+      enabled: false,
+      default: "google/gemini-3-pro-image",
+    },
+    deepResearch: {
+      enabled: false,
+      defaultModel: "google/gemini-2.5-flash-lite",
+      finalReportModel: "google/gemini-3-flash",
+      allowClarification: true,
+      maxResearcherIterations: 1,
+      maxConcurrentResearchUnits: 2,
+      maxSearchQueries: 2,
+    },
   },
 } satisfies ModelDefaults;
 
@@ -69,22 +129,52 @@ const openaiOnlyDefaults = {
     "gpt-5.2-chat-latest",
   ],
   anonymousModels: ["gpt-5-nano"],
-  defaults: {
+  workflows: {
     chat: "gpt-5-mini",
     title: "gpt-5-nano",
     pdf: "gpt-5-mini",
-    artifact: "gpt-5-nano",
-    artifactSuggestion: "gpt-5-mini",
-    followupSuggestions: "gpt-5-nano",
-    suggestions: "gpt-5-mini",
-    polishText: "gpt-5-mini",
-    formatSheet: "gpt-5-mini",
-    analyzeSheet: "gpt-5-mini",
-    codeEdits: "gpt-5-mini",
     chatImageCompatible: "gpt-4o-mini",
-    image: "gpt-image-1",
-    deepResearch: "gpt-5-nano",
-    deepResearchFinalReport: "gpt-5-mini",
+  },
+  tools: {
+    webSearch: {
+      enabled: false,
+    },
+    urlRetrieval: {
+      enabled: false,
+    },
+    codeExecution: {
+      enabled: false,
+    },
+    mcp: {
+      enabled: false,
+    },
+    followupSuggestions: {
+      enabled: false,
+      default: "gpt-5-nano",
+    },
+    text: {
+      polish: "gpt-5-mini",
+    },
+    sheet: {
+      format: "gpt-5-mini",
+      analyze: "gpt-5-mini",
+    },
+    code: {
+      edits: "gpt-5-mini",
+    },
+    image: {
+      enabled: false,
+      default: "gpt-image-1",
+    },
+    deepResearch: {
+      enabled: false,
+      defaultModel: "gpt-5-nano",
+      finalReportModel: "gpt-5-mini",
+      allowClarification: true,
+      maxResearcherIterations: 1,
+      maxConcurrentResearchUnits: 2,
+      maxSearchQueries: 2,
+    },
   },
 } satisfies ModelDefaults;
 

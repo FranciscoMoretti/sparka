@@ -30,7 +30,7 @@ export default async function ChatLayout({
   const cookieModel = cookieStore.get("chat-model")?.value;
   const isAnonymous = !session?.user;
 
-  const default_chat_model = config.models.defaults.chat;
+  const default_chat_model = config.ai.workflows.chat;
   // Check if the model from cookie exists in available models
   let defaultModel: AppModelId =
     (cookieModel as AppModelId) ?? default_chat_model;

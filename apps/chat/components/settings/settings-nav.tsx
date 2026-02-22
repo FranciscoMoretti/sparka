@@ -19,7 +19,7 @@ export function SettingsNav({
       [
         { href: "/settings" as const, label: "General", icon: Settings },
         { href: "/settings/models" as const, label: "Models", icon: Cpu },
-        ...(config.features.mcp
+        ...(config.ai.tools.mcp.enabled
           ? [
               {
                 href: "/settings/connectors" as const,

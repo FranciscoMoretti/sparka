@@ -12,7 +12,7 @@ export async function generateFollowupSuggestions(
   const minQuestionCount = 3;
   const maxCharactersPerQuestion = 80;
   return streamText({
-    model: await getLanguageModel(config.models.defaults.followupSuggestions),
+    model: await getLanguageModel(config.ai.tools.followupSuggestions.default),
     messages: [
       ...modelMessages,
       {

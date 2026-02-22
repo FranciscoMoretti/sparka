@@ -26,7 +26,7 @@ import { createTRPCRouter, protectedProcedure } from "@/trpc/init";
 const log = createModuleLogger("mcp.router");
 
 function assertMcpEnabled() {
-  if (!config.features.mcp) {
+  if (!config.ai.tools.mcp.enabled) {
     throw new TRPCError({
       code: "PRECONDITION_FAILED",
       message: "MCP integration disabled",
@@ -113,7 +113,7 @@ async function getConnectorWithPermission({
 
 export const mcpRouter = createTRPCRouter({
   list: protectedProcedure.query(async ({ ctx }) => {
-    if (!config.features.mcp) {
+    if (!config.ai.tools.mcp.enabled) {
       return [];
     }
     return await getMcpConnectorsByUserId({ userId: ctx.user.id });
@@ -125,7 +125,7 @@ export const mcpRouter = createTRPCRouter({
    * Still includes enabled/disabled state so UI can show toggles.
    */
   listConnected: protectedProcedure.query(async ({ ctx }) => {
-    if (!config.features.mcp) {
+    if (!config.ai.tools.mcp.enabled) {
       return [];
     }
     const connectors = await getMcpConnectorsByUserId({ userId: ctx.user.id });

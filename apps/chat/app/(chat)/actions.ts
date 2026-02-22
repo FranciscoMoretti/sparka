@@ -11,7 +11,7 @@ export async function generateTitleFromUserMessage({
   message: ChatMessage;
 }) {
   const { text: title } = await generateText({
-    model: await getLanguageModel(config.models.defaults.title),
+    model: await getLanguageModel(config.ai.workflows.title),
     system: `\n
     - you will generate a short title based on the first message a user begins a conversation with
     - ensure it is not more than 40 characters long

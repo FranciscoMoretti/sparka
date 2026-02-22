@@ -37,9 +37,10 @@ export async function GET(request: NextRequest) {
 }
 
 async function cleanupOrphanedAttachments() {
-  // Skip cleanup if neither imageGeneration nor attachments is enabled
-  const { imageGeneration, attachments } = config.features;
-  if (!(imageGeneration || attachments)) {
+  // Skip cleanup if neither image tool nor attachments is enabled
+  const imageGenerationEnabled = config.ai.tools.image.enabled;
+  const attachmentsEnabled = config.features.attachments;
+  if (!(imageGenerationEnabled || attachmentsEnabled)) {
     return { deletedCount: 0, deletedUrls: [], skipped: true };
   }
 

@@ -12,8 +12,12 @@ Deep Research is an autonomous agent that conducts multi-step research on comple
 Enable deep research in `chat.config.ts`:
 
 ```ts
-features: {
-  deepResearch: true,
+ai: {
+  tools: {
+    deepResearch: {
+      enabled: true,
+    },
+  },
 }
 ```
 
@@ -76,21 +80,17 @@ The agent synthesizes all research notes into a comprehensive markdown report an
 Configure deep research behavior in `chat.config.ts`:
 
 ```ts
-deepResearch: {
-  allowClarification: true,        // Ask clarifying questions
-  maxResearcherIterations: 1,      // Supervisor loop iterations
-  maxConcurrentResearchUnits: 2,   // Topics researched in parallel
-  maxSearchQueries: 2,             // Queries per research topic
-},
-```
-
-Configure models in `models.defaults`:
-
-```ts
-models: {
-  defaults: {
-    deepResearch: "google/gemini-2.5-flash-lite",
-    deepResearchFinalReport: "google/gemini-3-flash",
+ai: {
+  tools: {
+    deepResearch: {
+      enabled: true,
+      defaultModel: "google/gemini-2.5-flash-lite",
+      finalReportModel: "google/gemini-3-flash",
+      allowClarification: true,      // Ask clarifying questions
+      maxResearcherIterations: 1,    // Supervisor loop iterations
+      maxConcurrentResearchUnits: 2, // Topics researched in parallel
+      maxSearchQueries: 2,           // Queries per research topic
+    },
   },
 },
 ```

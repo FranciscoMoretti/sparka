@@ -39,11 +39,11 @@ export const toolDefinitions: Record<UiToolName, ToolDefinition> = {
 export const enabledTools: UiToolName[] = [
   // Canvas tools are always available
   "createTextDocument",
-  // Web search tools require webSearch integration
-  ...(config.features.webSearch
-    ? (["webSearch", "deepResearch"] as const)
-    : []),
+  // Web search tool
+  ...(config.ai.tools.webSearch.enabled ? (["webSearch"] as const) : []),
+  // Deep research tool
+  ...(config.ai.tools.deepResearch.enabled ? (["deepResearch"] as const) : []),
   // Image generation requires imageGeneration integration
-  ...(config.features.imageGeneration ? (["generateImage"] as const) : []),
-  ...(config.features.videoGeneration ? (["generateVideo"] as const) : []),
+  ...(config.ai.tools.image.enabled ? (["generateImage"] as const) : []),
+  ...(config.ai.tools.video.enabled ? (["generateVideo"] as const) : []),
 ];

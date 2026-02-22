@@ -8,7 +8,7 @@ import type {
 
 /** The gateway type actively selected in chat.config.ts */
 export type ActiveGatewayType = typeof chatConfig extends {
-  models: { gateway: infer G extends GatewayType };
+  ai: { gateway: infer G extends GatewayType };
 }
   ? G
   : DefaultGateway;

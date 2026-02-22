@@ -1,5 +1,5 @@
 import type { GatewayType } from "./ai/gateways/registry";
-import type { AuthenticationConfig, FeaturesConfig } from "./config-schema";
+import type { AiConfig, AuthenticationConfig, FeaturesConfig } from "./config-schema";
 
 type EnvVarName = keyof NodeJS.ProcessEnv;
 
@@ -30,6 +30,15 @@ export const gatewayEnvRequirements: Record<GatewayType, EnvRequirement> = {
 export const featureEnvRequirements: Partial<
   Record<keyof FeaturesConfig, EnvRequirement>
 > = {
+  attachments: {
+    options: [["BLOB_READ_WRITE_TOKEN"]],
+    description: "BLOB_READ_WRITE_TOKEN",
+  },
+};
+
+export const aiToolEnvRequirements: Partial<
+  Record<keyof AiConfig["tools"], EnvRequirement>
+> = {
   webSearch: {
     options: [["TAVILY_API_KEY"], ["FIRECRAWL_API_KEY"]],
     description: "TAVILY_API_KEY or FIRECRAWL_API_KEY",
@@ -46,7 +55,7 @@ export const featureEnvRequirements: Partial<
     options: [["MCP_ENCRYPTION_KEY"]],
     description: "MCP_ENCRYPTION_KEY",
   },
-  sandbox: {
+  codeExecution: {
     options: [
       ["VERCEL_OIDC_TOKEN"],
       ["VERCEL_TEAM_ID", "VERCEL_PROJECT_ID", "VERCEL_TOKEN"],
@@ -54,11 +63,7 @@ export const featureEnvRequirements: Partial<
     description:
       "VERCEL_OIDC_TOKEN (auto on Vercel) or VERCEL_TEAM_ID + VERCEL_PROJECT_ID + VERCEL_TOKEN",
   },
-  imageGeneration: {
-    options: [["BLOB_READ_WRITE_TOKEN"]],
-    description: "BLOB_READ_WRITE_TOKEN",
-  },
-  attachments: {
+  image: {
     options: [["BLOB_READ_WRITE_TOKEN"]],
     description: "BLOB_READ_WRITE_TOKEN",
   },

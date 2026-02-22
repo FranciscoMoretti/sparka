@@ -1,11 +1,11 @@
 import userConfig from "@/chat.config";
 import type { ActiveGatewayType } from "./ai/app-model-id";
-import { type Config, configSchema, type ModelsConfig } from "./config-schema";
+import { type AiConfig, type Config, configSchema } from "./config-schema";
 
-type ActiveModelsConfig = Extract<ModelsConfig, { gateway: ActiveGatewayType }>;
+type ActiveAiConfig = Extract<AiConfig, { gateway: ActiveGatewayType }>;
 
-/** Config with the `models` field narrowed to the active gateway. */
-type ActiveConfig = Omit<Config, "models"> & { models: ActiveModelsConfig };
+/** Config with the `ai` field narrowed to the active gateway. */
+type ActiveConfig = Omit<Config, "ai"> & { ai: ActiveAiConfig };
 
 /**
  * Parsed configuration with defaults applied.

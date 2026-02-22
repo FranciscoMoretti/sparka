@@ -44,7 +44,7 @@ export const serverEnvSchema = {
     .optional()
     .describe("Vercel OAuth integration client secret"),
 
-  // AI Gateway keys (one required depending on config.models.gateway)
+  // AI Gateway keys (one required depending on config.ai.gateway)
   AI_GATEWAY_API_KEY: z
     .string()
     .optional()

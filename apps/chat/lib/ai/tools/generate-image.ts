@@ -41,7 +41,7 @@ async function resolveImageModel(selectedModel?: string): Promise<{
   }
 
   // Fall back to the configured default image model
-  const defaultId = config.models.defaults.image;
+  const defaultId = config.ai.tools.image.default;
   try {
     const model = await getAppModelDefinition(defaultId as AppModelId);
     // Default could be a multimodal language model (e.g. gemini-3-pro-image)
@@ -161,7 +161,7 @@ async function runGenerateImageTraditional({
   }
 
   const res = await generateImage({
-    model: getImageModel(config.models.defaults.image),
+    model: getImageModel(config.ai.tools.image.default),
     prompt: promptInput,
     n: 1,
     providerOptions: {
@@ -184,7 +184,7 @@ async function runGenerateImageTraditional({
 
   if (res.usage) {
     costAccumulator?.addLLMCost(
-      config.models.defaults.image as AppModelId,
+      config.ai.tools.image.default as AppModelId,
       {
         inputTokens: res.usage.inputTokens,
         outputTokens: res.usage.outputTokens,

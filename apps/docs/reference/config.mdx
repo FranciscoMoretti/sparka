@@ -35,7 +35,9 @@ export type PricingConfig = {
   };
 };
 
-export type ModelsConfig = {
+export type AiConfig = {
+  /** Active AI gateway */
+  gateway: "vercel" | "openrouter" | "openai" | "openai-compatible";
   /** Provider sort order in model selector */
   providerOrder: string[];
   /** Models to hide from all users */
@@ -44,21 +46,33 @@ export type ModelsConfig = {
   curatedDefaults: AppModelId[];
   /** Models available to anonymous users */
   anonymousModels: AppModelId[];
-  /** Default model for each task type */
-  defaults: {
+  /** Default model for shared app workflows */
+  workflows: {
     chat: AppModelId;
     title: AppModelId;
     pdf: AppModelId;
-    artifact: AppModelId;
-    artifactSuggestion: AppModelId;
-    followupSuggestions: AppModelId;
-    suggestions: AppModelId;
-    polishText: AppModelId;
-    formatSheet: AppModelId;
-    analyzeSheet: AppModelId;
-    codeEdits: AppModelId;
     chatImageCompatible: AppModelId;
-    image: ImageModelId;
+  };
+  /** Tool-level enablement and model defaults */
+  tools: {
+    webSearch: { enabled: boolean };
+    urlRetrieval: { enabled: boolean };
+    codeExecution: { enabled: boolean };
+    mcp: { enabled: boolean };
+    followupSuggestions: { enabled: boolean; default: AppModelId };
+    text: { polish: AppModelId };
+    sheet: { format: AppModelId; analyze: AppModelId };
+    code: { edits: AppModelId };
+    image: { enabled: boolean; default: ImageModelId };
+    deepResearch: {
+      enabled: boolean;
+      defaultModel: AppModelId;
+      finalReportModel: AppModelId;
+      allowClarification: boolean;
+      maxResearcherIterations: number;
+      maxConcurrentResearchUnits: number;
+      maxSearchQueries: number;
+    };
   };
 };
 
@@ -88,9 +102,8 @@ export type AttachmentsConfig = {
 };
 
 export type Config = {
-  /** AI gateway backend: "vercel" (default) or "openrouter" */
-  gateway: "vercel" | "openrouter";
-  githubUrl: string;
+  /** AI runtime and model configuration */
+  ai: AiConfig;
   appPrefix: string;
   appName: string;
   /** Browser tab title (defaults to appName) */
@@ -113,22 +126,12 @@ export type Config = {
   };
 
   /**
-   * Feature flags for optional features.
+   * Feature flags.
    * Set to true to enable - requires corresponding env vars.
    * Validated at build time via scripts/check-env.ts.
    */
   features: {
-    /** Code sandbox execution (Vercel-native) */
-    sandbox: boolean;
-    /** Web search */
-    webSearch: boolean;
-    /** URL content retrieval */
-    urlRetrieval: boolean;
-    /** MCP tool servers */
-    mcp: boolean;
-    /** AI image generation (requires BLOB_READ_WRITE_TOKEN) */
-    imageGeneration: boolean;
-    /** File attachments - images and PDFs (requires BLOB_READ_WRITE_TOKEN) */
+    /** File attachments (requires BLOB_READ_WRITE_TOKEN) */
     attachments: boolean;
   };
 
@@ -165,8 +168,6 @@ export type Config = {
     vercel: boolean;
   };
 
-  /** Model configuration */
-  models: ModelsConfig;
   /** Anonymous user configuration */
   anonymous: AnonymousConfig;
   /** File attachment configuration */
@@ -176,7 +177,7 @@ export type Config = {
 
 ## Gateway
 
-The `gateway` field determines which AI backend is used for model creation and model-list fetching. Validated at build time.
+The `ai.gateway` field determines which AI backend is used for model creation and model-list fetching. Validated at build time.
 
 | Value                 | Backend                                          | Required Env Vars                           |
 | --------------------- | ------------------------------------------------ | ------------------------------------------- |
@@ -187,18 +188,23 @@ The `gateway` field determines which AI backend is used for model creation and m
 
 ## Feature flags + env validation
 
-Feature flags live under `features` and `authentication`. They're validated at build time by `scripts/check-env.ts`:
+Feature flags live under `ai.tools`, `features`, and `authentication`. They're validated at build time by `scripts/check-env.ts`:
 
 - Runs as `prebuild` step before `next build`
 - Missing env vars will fail the build immediately
 
+### Tool flags (`ai.tools`)
+
+- **`ai.tools.codeExecution.enabled`**: requires `VERCEL_OIDC_TOKEN` (on Vercel) _or_ `VERCEL_TEAM_ID + VERCEL_PROJECT_ID + VERCEL_TOKEN` (self-hosted)
+- **`ai.tools.webSearch.enabled`**: requires `TAVILY_API_KEY` _or_ `FIRECRAWL_API_KEY`
+- **`ai.tools.urlRetrieval.enabled`**: requires `FIRECRAWL_API_KEY` - fetch structured content from URLs
+- **`ai.tools.mcp.enabled`**: requires `MCP_ENCRYPTION_KEY`
+- **`ai.tools.image.enabled`**: requires `BLOB_READ_WRITE_TOKEN` - AI-powered image generation tool
+- **`ai.tools.deepResearch.enabled`**: requires a configured search provider (`TAVILY_API_KEY` or `FIRECRAWL_API_KEY`)
+- **`ai.tools.followupSuggestions.enabled`**: no extra env var, uses configured language model
+
 ### Features
 
-- **`features.sandbox`**: requires `VERCEL_OIDC_TOKEN` (on Vercel) _or_ `VERCEL_TEAM_ID + VERCEL_PROJECT_ID + VERCEL_TOKEN` (self-hosted)
-- **`features.webSearch`**: requires `TAVILY_API_KEY` _or_ `FIRECRAWL_API_KEY`
-- **`features.urlRetrieval`**: requires `FIRECRAWL_API_KEY` - fetch structured content from URLs
-- **`features.mcp`**: requires `MCP_ENCRYPTION_KEY`
-- **`features.imageGeneration`**: requires `BLOB_READ_WRITE_TOKEN` - AI-powered image generation tool
 - **`features.attachments`**: requires `BLOB_READ_WRITE_TOKEN` - file uploads (images and PDFs)
 
 ### Authentication
@@ -210,4 +216,4 @@ Feature flags live under `features` and `authentication`. They're validated at b
 ## Notes on behavior
 
 - **Anonymous limits**: `anonymous.credits` and rate limits are typically higher in dev and lower in prod (see `config.anonymous` implementation).
-- **Models**: `models.defaults` drives which model is used per task; `models.disabledModels` hard-hides models globally; `models.anonymousModels` constrains what anonymous users can pick.
+- **Models**: `ai.workflows` defines shared workflow defaults, `ai.tools.*.default` defines tool defaults, `ai.disabledModels` hard-hides models globally, and `ai.anonymousModels` constrains what anonymous users can pick.

@@ -34,7 +34,7 @@ export const fetchModels = unstable_cache(
     const models = await fetchModelsRaw();
     return models.map(toModelData);
   },
-  [`ai-gateway-models-${config.models.gateway}`],
+  [`ai-gateway-models-${config.ai.gateway}`],
   {
     revalidate: 3600,
     tags: ["ai-gateway-models"],

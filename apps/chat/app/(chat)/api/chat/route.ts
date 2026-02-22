@@ -415,7 +415,7 @@ async function createChatStream({
       const responseMessages = response.messages;
 
       // Generate and stream follow-up suggestions
-      if (config.features.followupSuggestions) {
+      if (config.ai.tools.followupSuggestions.enabled) {
         const followupSuggestionsResult = generateFollowupSuggestions([
           ...contextForLLM,
           ...responseMessages,
@@ -835,7 +835,7 @@ export async function POST(request: NextRequest) {
         modelDefinition,
         explicitlyRequestedTools,
       }),
-      config.features.mcp && userId && !isAnonymous
+      config.ai.tools.mcp.enabled && userId && !isAnonymous
         ? getMcpConnectorsByUserId({ userId })
         : Promise.resolve([]),
     ]);

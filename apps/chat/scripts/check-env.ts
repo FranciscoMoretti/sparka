@@ -9,6 +9,7 @@ import type { GatewayType } from "../lib/ai/gateways/registry";
 import { generatedForGateway } from "../lib/ai/models.generated";
 import { config } from "../lib/config";
 import {
+  aiToolEnvRequirements,
   authEnvRequirements,
   featureEnvRequirements,
   gatewayEnvRequirements,
@@ -20,7 +21,7 @@ type ValidationError = { feature: string; missing: string[] };
 
 function validateGatewayKey(env: NodeJS.ProcessEnv): ValidationError | null {
   // Prevent TS from narrowing to the current literal config value.
-  const gateway = (() => config.models.gateway as GatewayType)();
+  const gateway = (() => config.ai.gateway as GatewayType)();
   const requirement = gatewayEnvRequirements[gateway];
   const missing = getMissingRequirement(requirement, env);
   if (!missing) {
@@ -54,6 +55,33 @@ function validateFeatures(env: NodeJS.ProcessEnv): ValidationError[] {
     if (missing) {
       errors.push({
         feature: `features.${feature}`,
+        missing: [missing],
+      });
+    }
+  }
+
+  return errors;
+}
+
+function validateAiTools(env: NodeJS.ProcessEnv): ValidationError[] {
+  const errors: ValidationError[] = [];
+
+  const toolEntries = Object.entries(aiToolEnvRequirements) as [
+    keyof typeof aiToolEnvRequirements,
+    NonNullable<
+      (typeof aiToolEnvRequirements)[keyof typeof aiToolEnvRequirements]
+    >,
+  ][];
+
+  for (const [tool, requirement] of toolEntries) {
+    const toolConfig = config.ai.tools[tool];
+    if (!(requirement && "enabled" in toolConfig && toolConfig.enabled)) {
+      continue;
+    }
+    const missing = getMissingRequirement(requirement, env);
+    if (missing) {
+      errors.push({
+        feature: `ai.tools.${tool}`,
         missing: [missing],
       });
     }
@@ -119,10 +147,10 @@ function validateBaseUrl(env: NodeJS.ProcessEnv): ValidationError | null {
 }
 
 function checkGatewaySnapshot(): string | null {
-  if (config.models.gateway === generatedForGateway) {
+  if (config.ai.gateway === generatedForGateway) {
     return null;
   }
-  return `models.generated.ts was built for "${generatedForGateway}" but config uses "${config.models.gateway}". Run \`bun fetch:models\` to update the fallback snapshot.`;
+  return `models.generated.ts was built for "${generatedForGateway}" but config uses "${config.ai.gateway}". Run \`bun fetch:models\` to update the fallback snapshot.`;
 }
 
 function checkEnv(): void {
@@ -131,6 +159,7 @@ function checkEnv(): void {
   const errors = [
     ...(baseUrlError ? [baseUrlError] : []),
     ...validateFeatures(env),
+    ...validateAiTools(env),
     ...validateAuthentication(env),
   ];
 

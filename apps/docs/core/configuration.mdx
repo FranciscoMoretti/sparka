@@ -23,16 +23,18 @@ const config: ConfigInput = {
     },
   },
 
-  models: {
+  ai: {
     gateway: "vercel", // "vercel" | "openrouter" | "openai" | "openai-compatible"
-    // ...
+    tools: {
+      webSearch: { enabled: true },
+      codeExecution: { enabled: true },
+      mcp: { enabled: false },
+      image: { enabled: true },
+    },
   },
 
   features: {
-    sandbox: true, // Code execution (Python/JS)
-    webSearch: true, // Tavily/Exa web search
-    mcp: true, // MCP connector support
-    imageGeneration: true, // AI image generation
+    attachments: true, // File uploads (images and PDFs)
   },
 
   authentication: {
@@ -49,7 +51,7 @@ export default config;
 
 ## AI Gateway
 
-The `models.gateway` field selects which AI backend to use. All model routing, fetching, and API calls go through the active gateway.
+The `ai.gateway` field selects which AI backend to use. All model routing, fetching, and API calls go through the active gateway.
 
 | Value                 | Backend                                          | Env Dependency                              |
 | --------------------- | ------------------------------------------------ | ------------------------------------------- |
@@ -59,7 +61,7 @@ The `models.gateway` field selects which AI backend to use. All model routing, f
 | `"openai-compatible"` | [OpenAI Compatible](/gateways/openai-compatible) | `OPENAI_COMPATIBLE_BASE_URL`                |
 
 ```typescript
-models: {
+ai: {
   gateway: "openrouter", // Switch to OpenRouter
   // ...
 },
@@ -69,23 +71,33 @@ See [Gateways](/gateways/overview) for detailed setup and comparison.
 
 ## Features
 
-Toggle features on/off. Set to `true` to enable. Missing env vars are caught at build time via `bun run prebuild`.
+Toggle feature flags on/off. Tool flags live under `ai.tools.*.enabled`. `features` currently contains only attachments. Missing env vars are caught at build time via `bun run prebuild`.
 
-| Feature          | Config Key                 | Env Dependency                                                                         |
-| ---------------- | -------------------------- | -------------------------------------------------------------------------------------- |
-| Code Sandbox     | `features.sandbox`         | `VERCEL_OIDC_TOKEN` (on Vercel) or `VERCEL_TEAM_ID + VERCEL_PROJECT_ID + VERCEL_TOKEN` |
-| Web Search       | `features.webSearch`       | `TAVILY_API_KEY` or `FIRECRAWL_API_KEY`                                                |
-| MCP Connectors   | `features.mcp`             | `MCP_ENCRYPTION_KEY`                                                                   |
-| Image Generation | `features.imageGeneration` | `BLOB_READ_WRITE_TOKEN`                                                                |
-| Attachments      | `features.attachments`     | `BLOB_READ_WRITE_TOKEN`                                                                |
+| Feature               | Config Key                            | Env Dependency                                                                           |
+| --------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Code Execution        | `ai.tools.codeExecution.enabled`      | `VERCEL_OIDC_TOKEN` (on Vercel) or `VERCEL_TEAM_ID + VERCEL_PROJECT_ID + VERCEL_TOKEN` |
+| Web Search            | `ai.tools.webSearch.enabled`          | `TAVILY_API_KEY` or `FIRECRAWL_API_KEY`                                                 |
+| URL Retrieval         | `ai.tools.urlRetrieval.enabled`       | `FIRECRAWL_API_KEY`                                                                      |
+| MCP Connectors        | `ai.tools.mcp.enabled`                | `MCP_ENCRYPTION_KEY`                                                                     |
+| Image Generation      | `ai.tools.image.enabled`              | `BLOB_READ_WRITE_TOKEN`                                                                  |
+| Deep Research         | `ai.tools.deepResearch.enabled`       | `TAVILY_API_KEY` or `FIRECRAWL_API_KEY`                                                  |
+| Follow-up Suggestions | `ai.tools.followupSuggestions.enabled` | Uses your configured language model provider                                              |
+| Attachments           | `features.attachments`                | `BLOB_READ_WRITE_TOKEN`                                                                  |
 
 ```typescript
+ai: {
+  tools: {
+    webSearch: { enabled: true },          // Requires TAVILY_API_KEY or FIRECRAWL_API_KEY
+    urlRetrieval: { enabled: false },      // Requires FIRECRAWL_API_KEY
+    codeExecution: { enabled: true },      // Vercel-native
+    mcp: { enabled: false },               // Requires MCP_ENCRYPTION_KEY
+    image: { enabled: true },              // Requires BLOB_READ_WRITE_TOKEN
+    deepResearch: { enabled: false },      // Requires search provider
+    followupSuggestions: { enabled: true } // Uses selected provider/model
+  },
+},
 features: {
-  sandbox: true,         // Vercel-native, requires VERCEL_OIDC_TOKEN
-  webSearch: true,       // Requires TAVILY_API_KEY or FIRECRAWL_API_KEY
-  mcp: false,            // Requires MCP_ENCRYPTION_KEY
-  imageGeneration: true, // Requires BLOB_READ_WRITE_TOKEN
-  attachments: true,     // Requires BLOB_READ_WRITE_TOKEN
+  attachments: true, // Requires BLOB_READ_WRITE_TOKEN
 },
 ```
 
@@ -138,8 +150,7 @@ Full type reference:
 
 ```typescript
 export type Config = {
-  models: ModelsConfig; // includes gateway: "vercel" | "openrouter" | "openai" | "openai-compatible"
-  githubUrl: string;
+  ai: AiConfig; // includes gateway, model lists, workflows, and tool config
   appPrefix: string;
   appName: string;
   /** Browser tab title (defaults to appName) */
@@ -159,10 +170,6 @@ export type Config = {
     paymentProcessors: string[];
   };
   features: {
-    sandbox: boolean;
-    webSearch: boolean;
-    mcp: boolean;
-    imageGeneration: boolean;
     attachments: boolean;
   };
   pricing?: PricingConfig;
@@ -185,4 +192,4 @@ export type Config = {
 };
 ```
 
-See [Config Reference](/reference/config) for full type definitions of `ModelsConfig`, `AnonymousConfig`, and `AttachmentsConfig`.
+See [Config Reference](/reference/config) for full type definitions of `AiConfig`, `AnonymousConfig`, and `AttachmentsConfig`.

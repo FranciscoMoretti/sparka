@@ -16,8 +16,12 @@ Enable your AI to search the web in real-time and provide answers with inline ci
 Enable web search in `chat.config.ts`:
 
 ```ts
-features: {
-  webSearch: true, // Requires TAVILY_API_KEY or FIRECRAWL_API_KEY
+ai: {
+  tools: {
+    webSearch: {
+      enabled: true, // Requires TAVILY_API_KEY or FIRECRAWL_API_KEY
+    },
+  },
 }
 ```
 
@@ -137,8 +141,12 @@ A separate `retrieveUrl` tool is available for fetching structured content from 
 Enable in `chat.config.ts`:
 
 ```ts
-features: {
-  urlRetrieval: true, // Requires FIRECRAWL_API_KEY
+ai: {
+  tools: {
+    urlRetrieval: {
+      enabled: true, // Requires FIRECRAWL_API_KEY
+    },
+  },
 }
 ```
 

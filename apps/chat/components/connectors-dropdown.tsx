@@ -30,7 +30,7 @@ function PureConnectorsDropdown() {
 
   const { data: connectors } = useQuery({
     ...trpc.mcp.listConnected.queryOptions(),
-    enabled: config.features.mcp && isAuthenticated,
+    enabled: config.ai.tools.mcp.enabled && isAuthenticated,
   });
 
   const queryKey = trpc.mcp.listConnected.queryKey();
@@ -59,7 +59,7 @@ function PureConnectorsDropdown() {
       },
     })
   );
-  if (!config.features.mcp) {
+  if (!config.ai.tools.mcp.enabled) {
     return null;
   }
   if (!connectors || connectors.length === 0) {
