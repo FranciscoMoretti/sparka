@@ -68,12 +68,28 @@ const config = defineConfig({
     vercel: true, // Requires VERCEL_APP_CLIENT_ID + VERCEL_APP_CLIENT_SECRET
   },
   ai: {
-    gateway: "openai",
-    providerOrder: ["openai"],
+    gateway: "vercel",
+    providerOrder: [
+      "openai",
+      "anthropic",
+      "google",
+      "xai",
+      "meta",
+      "mistral",
+      "deepseek",
+      "perplexity",
+      "cohere",
+      "alibaba",
+      "amazon",
+      "inception",
+      "moonshot",
+      "morph",
+      "zai",
+    ],
     disabledModels: [],
-    anonymousModels: ["gpt-5-nano"],
+    anonymousModels: ["openai/gpt-5-nano"],
     workflows: {
-      chatImageCompatible: "gpt-4o-mini",
+      chatImageCompatible: "openai/gpt-4o-mini",
     },
     tools: {
       webSearch: {
@@ -92,23 +108,23 @@ const config = defineConfig({
         enabled: true,
       },
       text: {
-        polish: "gpt-5-mini",
+        polish: "openai/gpt-5-mini",
       },
       sheet: {
-        format: "gpt-5-mini",
-        analyze: "gpt-5-mini",
+        format: "openai/gpt-5-mini",
+        analyze: "openai/gpt-5-mini",
       },
       code: {
-        edits: "gpt-5-mini",
+        edits: "openai/gpt-5-mini",
       },
       image: {
         enabled: true, // Requires BLOB_READ_WRITE_TOKEN
-        default: "gpt-image-1",
+        default: "google/gemini-3-pro-image",
       },
       deepResearch: {
         enabled: true, // Requires webSearch
-        defaultModel: "gpt-5-nano",
-        finalReportModel: "gpt-5-mini",
+        defaultModel: "openai/gpt-5-nano",
+        finalReportModel: "openai/gpt-5-mini",
         allowClarification: true,
         maxResearcherIterations: 1,
         maxConcurrentResearchUnits: 2,
