@@ -76,9 +76,12 @@ const PureUserMessage = ({
           )}
           {mode === "view" && !isReadonly && (
             <button
-              className="block cursor-pointer text-left transition-opacity hover:opacity-80"
+              className="block cursor-pointer select-text text-left transition-opacity hover:opacity-80"
               data-testid="message-content"
-              onClick={() => setMode("edit")}
+              onClick={() => {
+                if (window.getSelection()?.toString()) return;
+                setMode("edit");
+              }}
               type="button"
             >
               <MessageContent
