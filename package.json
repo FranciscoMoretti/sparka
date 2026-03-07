@@ -8,8 +8,7 @@
 		"packages/*"
 	],
 	"scripts": {
-		"dev": "dotenv -e .env.local -- turbo run dev --parallel",
-		"dev:chat": "dotenv -e .env.local -- turbo run dev --filter=@chatjs/chat",
+		"dev": "dotenv -e .env.local -- turbo run dev --filter=@chatjs/chat",
 		"dev:docs": "turbo run dev --filter=@chatjs/docs",
 		"build": "dotenv -e .env.local -- turbo run build",
 		"fetch:models": "dotenv -e .env.local -- turbo run fetch:models --filter=@chatjs/chat",
