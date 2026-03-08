@@ -19,6 +19,7 @@ import { config } from "@/lib/config";
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
 import type { McpConnector } from "@/lib/db/schema";
 import { createModuleLogger } from "@/lib/logger";
+import { pluginTools } from "../plugin-tools";
 import type { StreamWriter } from "../types";
 import { deepResearch } from "./deep-research/deep-research";
 import type { ToolSession } from "./types";
@@ -106,6 +107,7 @@ export function getTools({
           }),
         }
       : {}),
+    ...pluginTools,
   };
 }
 

@@ -1,6 +1,5 @@
 "use client";
 
-import type { ToolUIPart } from "ai";
 import {
   isDataUIPart,
   isReasoningUIPart,
@@ -9,87 +8,19 @@ import {
   isToolUIPart,
 } from "ai";
 import { memo } from "react";
-import type { ChatTools } from "@/lib/ai/types";
 import {
   useMessagePartByPartIdx,
   useMessagePartTypesById,
 } from "@/lib/stores/hooks-message-parts";
-import { CodeExecution } from "./part/code-execution";
-import { DeepResearch } from "./part/deep-research";
-import { DocumentTool } from "./part/document-tool";
 import { DynamicToolPart } from "./part/dynamic-tool";
-import { GenerateImage } from "./part/generate-image";
-import { GenerateVideo } from "./part/generate-video";
 import { ReasoningPart } from "./part/message-reasoning";
-import { ReadDocument } from "./part/read-document";
-
-import { RetrieveUrl } from "./part/retrieve-url";
 import { TextMessagePart } from "./part/text-message-part";
-import { Weather } from "./part/weather";
-import { WebSearch } from "./part/web-search";
+import { ToolPart } from "./part/tool-part";
 
 interface MessagePartsProps {
   isLoading: boolean;
   isReadonly: boolean;
   messageId: string;
-}
-
-function ToolPart({
-  part,
-  messageId,
-  isReadonly,
-}: {
-  part: ToolUIPart<ChatTools>;
-  messageId: string;
-  isReadonly: boolean;
-}) {
-  const type = part.type;
-
-  if (type === "tool-getWeather") {
-    return <Weather tool={part} />;
-  }
-
-  if (
-    type === "tool-createTextDocument" ||
-    type === "tool-createCodeDocument" ||
-    type === "tool-createSheetDocument" ||
-    type === "tool-editTextDocument" ||
-    type === "tool-editCodeDocument" ||
-    type === "tool-editSheetDocument"
-  ) {
-    return (
-      <DocumentTool isReadonly={isReadonly} messageId={messageId} tool={part} />
-    );
-  }
-
-  if (type === "tool-retrieveUrl") {
-    return <RetrieveUrl tool={part} />;
-  }
-
-  if (type === "tool-readDocument") {
-    return <ReadDocument tool={part} />;
-  }
-
-  if (type === "tool-codeExecution") {
-    return <CodeExecution tool={part} />;
-  }
-
-  if (type === "tool-generateImage") {
-    return <GenerateImage tool={part} />;
-  }
-
-  if (type === "tool-generateVideo") {
-    return <GenerateVideo tool={part} />;
-  }
-
-  if (type === "tool-deepResearch") {
-    return <DeepResearch messageId={messageId} part={part} />;
-  }
-
-  if (type === "tool-webSearch") {
-    return <WebSearch messageId={messageId} part={part} />;
-  }
-  return null;
 }
 
 // Render a single part by index with minimal subscriptions
@@ -124,7 +55,6 @@ function PureMessagePart({
         <ToolPart isReadonly={isReadonly} messageId={messageId} part={part} />
       );
     }
-    // At this point it's a Dynamic Tool, tools are handled beforehand by the ToolPart component
     return (
       <DynamicToolPart
         isReadonly={isReadonly}
