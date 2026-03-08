@@ -18,23 +18,6 @@ function getAppAssetPath(...segments: string[]): string {
   return path.join(app.getAppPath(), ...segments);
 }
 
-function getTitlebarStyles(): string {
-  return `
-    :root {
-      --electron-titlebar-height: ${TITLEBAR_HEIGHT}px !important;
-    }
-
-    body {
-      padding-top: var(--electron-titlebar-height) !important;
-    }
-
-    [data-slot="sidebar-container"] {
-      top: var(--electron-titlebar-height) !important;
-      bottom: 0 !important;
-      height: calc(100svh - var(--electron-titlebar-height)) !important;
-    }
-  `;
-}
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -50,8 +33,15 @@ function createWindow(): BrowserWindow {
 
   win.loadURL(APP_URL);
 
-  win.webContents.on("did-finish-load", async () => {
-    await win.webContents.insertCSS(getTitlebarStyles());
+  win.webContents.on("did-finish-load", () => {
+    win.webContents.insertCSS(`
+      :root { --electron-titlebar-height: ${TITLEBAR_HEIGHT}px !important; }
+      body { padding-top: var(--electron-titlebar-height) !important; }
+      [data-slot="sidebar-container"] {
+        top: var(--electron-titlebar-height) !important;
+        height: calc(100svh - var(--electron-titlebar-height)) !important;
+      }
+    `);
   });
 
   // Handle OAuth popups and external links

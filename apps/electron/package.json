@@ -4,7 +4,7 @@
   "private": true,
   "main": "dist/main.js",
   "scripts": {
-    "build": "bun build src/main.ts --target=node --format=cjs --outfile dist/main.js --external electron --external electron-updater && bun build src/preload.ts --target=node --format=cjs --outfile dist/preload.js --external electron",
+    "build": "bun build src/main.ts --target=node --format=cjs --outfile dist/main.js --external electron --external electron-updater && bun build src/preload.ts --target=browser --format=cjs --outfile dist/preload.js --external electron",
     "dev": "bun run build && electron .",
     "package": "bun run build && electron-builder --dir",
     "dist:mac": "bun run build && electron-builder --mac",
