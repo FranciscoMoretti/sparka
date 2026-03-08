@@ -1,0 +1,51 @@
+appId: dev.chatjs.app
+productName: ChatJS
+copyright: Copyright © 2025 ChatJS
+
+directories:
+  output: release
+
+files:
+  - dist/**
+  - build/**
+  - package.json
+
+publish:
+  provider: github
+  owner: FranciscoMoretti
+  repo: chat-js-1
+  releaseType: release
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  category: public.app-category.productivity
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  gatekeeperAssess: false
+
+dmg:
+  sign: false
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  category: Network

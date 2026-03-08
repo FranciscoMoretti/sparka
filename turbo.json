@@ -65,6 +65,19 @@
     },
     "skiller:apply": {
       "cache": false
+    },
+    "electron:build": {
+      "cache": true,
+      "inputs": ["src/**", "package.json", "tsconfig.json"],
+      "outputs": ["dist/**"]
+    },
+    "electron:dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "electron:publish": {
+      "cache": false,
+      "dependsOn": ["electron:build"]
     }
   }
 }

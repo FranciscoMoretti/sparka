@@ -62,6 +62,10 @@ apps/*/evals/db/
 # Neon
 .neon
 
+# Electron
+apps/electron/dist/
+apps/electron/release/
+
 /.skillz
 /AGENTS.md
 /AGENTS.md.bak
