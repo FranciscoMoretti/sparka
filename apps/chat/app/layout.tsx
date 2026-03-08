@@ -86,7 +86,11 @@ export default async function RootLayout({
           />
         ) : null}
       </head>
-      <body className="antialiased" style={{ paddingTop: "var(--electron-titlebar-height, 0px)" }}>
+      <body
+        className="antialiased"
+        style={{ paddingTop: "var(--electron-titlebar-height, 0px)" }}
+        suppressHydrationWarning
+      >
         <ElectronTitlebarOffset />
         <Script
           src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"
