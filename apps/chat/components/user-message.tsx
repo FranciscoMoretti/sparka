@@ -78,8 +78,13 @@ const PureUserMessage = ({
             <button
               className="block cursor-pointer select-text text-left transition-opacity hover:opacity-80"
               data-testid="message-content"
-              onClick={() => {
-                if (window.getSelection()?.toString()) return;
+              onClick={(e) => {
+                const selection = window.getSelection();
+                if (
+                  selection?.toString() &&
+                  e.currentTarget.contains(selection.anchorNode)
+                )
+                  return;
                 setMode("edit");
               }}
               type="button"
