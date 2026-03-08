@@ -249,6 +249,23 @@ export const authenticationConfigSchema = z
     vercel: false,
   });
 
+export const pathsConfigSchema = z
+  .object({
+    plugins: z
+      .string()
+      .describe("Import alias for the plugin registry index")
+      .default("@/lib/ai/plugins"),
+    toolPlugins: z
+      .string()
+      .describe("Import alias for backend tool plugin files")
+      .default("@/lib/ai/tools/plugins"),
+    partPlugins: z
+      .string()
+      .describe("Import alias for frontend renderer plugin files")
+      .default("@/components/part/plugins"),
+  })
+  .default({});
+
 export const configSchema = z.object({
   appPrefix: z.string().default("chatjs"),
   appName: z.string().default("My AI Chat"),
@@ -326,6 +343,8 @@ export const configSchema = z.object({
   anonymous: anonymousConfigSchema,
 
   attachments: attachmentsConfigSchema,
+
+  paths: pathsConfigSchema,
 });
 
 // Output types (after defaults applied)
@@ -335,6 +354,7 @@ export type AiConfig = z.infer<typeof aiConfigSchema>;
 export type AnonymousConfig = z.infer<typeof anonymousConfigSchema>;
 export type AttachmentsConfig = z.infer<typeof attachmentsConfigSchema>;
 export type FeaturesConfig = z.infer<typeof featuresConfigSchema>;
+export type PathsConfig = z.infer<typeof pathsConfigSchema>;
 export type AuthenticationConfig = z.infer<typeof authenticationConfigSchema>;
 
 // Gateway-aware input types: model IDs narrowed per gateway for autocomplete
@@ -384,7 +404,6 @@ interface AiToolsInputFor<G extends GatewayType> {
 }
 
 // Only gateway is required; everything else is an override on top of GATEWAY_MODEL_DEFAULTS
-// biome-ignore lint/style/useConsistentTypeDefinitions: type is used intentionally here
 type AiInputFor<G extends GatewayType> = {
   gateway: G;
   providerOrder?: AiShape["providerOrder"];
