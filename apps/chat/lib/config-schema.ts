@@ -251,20 +251,16 @@ export const authenticationConfigSchema = z
 
 export const pathsConfigSchema = z
   .object({
-    plugins: z
+    tools: z
       .string()
-      .describe("Import alias for the plugin registry index")
-      .default("@/lib/ai/plugins"),
-    toolPlugins: z
+      .describe("Import alias for the tools registry index and backend tool files")
+      .default("@/lib/ai/tools"),
+    toolUi: z
       .string()
-      .describe("Import alias for backend tool plugin files")
-      .default("@/lib/ai/tools/plugins"),
-    partPlugins: z
-      .string()
-      .describe("Import alias for frontend renderer plugin files")
-      .default("@/components/part/plugins"),
+      .describe("Import alias for frontend tool renderer files")
+      .default("@/components/part/tools"),
   })
-  .default({});
+  .default({ tools: "@/lib/ai/tools", toolUi: "@/components/part/tools" });
 
 export const configSchema = z.object({
   appPrefix: z.string().default("chatjs"),

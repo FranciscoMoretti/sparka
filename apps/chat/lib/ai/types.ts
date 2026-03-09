@@ -14,7 +14,7 @@ import type { readDocument } from "@/lib/ai/tools/read-document";
 import type { retrieveUrl } from "@/lib/ai/tools/retrieve-url";
 import type { tavilyWebSearch } from "@/lib/ai/tools/web-search";
 import type { AppModelId } from "./app-models";
-import type { PluginTools } from "./plugin-tools";
+import type { InstalledTools } from "./installed-tools";
 import type { createCodeDocumentTool } from "./tools/documents/create-code-document";
 import type { createSheetDocumentTool } from "./tools/documents/create-sheet-document";
 import type { createTextDocumentTool } from "./tools/documents/create-text-document";
@@ -118,7 +118,7 @@ export type ChatTools = {
   readDocument: readDocumentTool;
   retrieveUrl: retrieveUrlTool;
   webSearch: webSearchTool;
-} & PluginTools;
+} & InstalledTools;
 
 interface FollowupSuggestions {
   suggestions: string[];
