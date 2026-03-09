@@ -4,15 +4,89 @@ import {
   BrowserWindow,
   Menu,
   nativeImage,
+  session,
   shell,
   Tray,
 } from "electron";
 import { autoUpdater } from "electron-updater";
 import { APP_URL, TITLEBAR_HEIGHT, WINDOW_DEFAULTS } from "./config";
 
+// Register chatjs:// as a protocol handler for OAuth deep-link callbacks.
+// Must be called before app is ready.
+app.setAsDefaultProtocolClient("chatjs");
+
+// On Windows, a second instance is launched when the OS opens a deep link.
+// We grab the URL from argv and quit the duplicate instance.
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  app.quit();
+}
+
 let isQuitting = false;
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
+
+// --- Deep-link / OAuth callback ---
+
+const OAUTH_HOSTS = [
+  "https://accounts.google.com",
+  "https://github.com/login/oauth",
+];
+
+function isAuthCallbackUrl(url: URL): boolean {
+  if (url.protocol !== "chatjs:") {
+    return false;
+  }
+
+  return (
+    url.pathname === "/auth/callback" ||
+    (url.host === "auth" && url.pathname === "/callback")
+  );
+}
+
+async function handleDeepLink(url: string): Promise<void> {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return;
+  }
+
+  if (!isAuthCallbackUrl(parsed)) {
+    return;
+  }
+
+  const token = parsed.searchParams.get("token");
+  if (!token) return;
+
+  try {
+    const res = await fetch(
+      `${APP_URL}/api/auth/electron-exchange?token=${encodeURIComponent(token)}`
+    );
+    if (!res.ok) {
+      console.error("electron-exchange failed:", res.status);
+      return;
+    }
+    const { sessionToken } = (await res.json()) as { sessionToken?: string };
+    if (!sessionToken) return;
+
+    // Inject the Better Auth session cookie into Electron's webview session.
+    await session.defaultSession.cookies.set({
+      url: APP_URL,
+      name: "better-auth.session_token",
+      value: sessionToken,
+      httpOnly: true,
+      secure: APP_URL.startsWith("https"),
+      sameSite: "lax",
+    });
+
+    mainWindow?.show();
+    mainWindow?.focus();
+    mainWindow?.webContents.reload();
+  } catch (err) {
+    console.error("Deep-link auth error:", err);
+  }
+}
 
 function getAppAssetPath(...segments: string[]): string {
   return path.join(app.getAppPath(), ...segments);
@@ -44,20 +118,17 @@ function createWindow(): BrowserWindow {
     `);
   });
 
-  // Handle OAuth popups and external links
-  win.webContents.setWindowOpenHandler(({ url }) => {
-    const oauthHosts = [
-      "accounts.google.com",
-      "github.com/login",
-      "github.com/sessions",
-    ];
-    const isOAuth = oauthHosts.some((host) => url.includes(host));
-
-    if (isOAuth) {
-      win.loadURL(url);
-      return { action: "deny" };
+  // Intercept top-level navigations to OAuth providers and open them in the
+  // user's default browser instead (where they're already logged in).
+  win.webContents.on("will-navigate", (event, url) => {
+    if (OAUTH_HOSTS.some((prefix) => url.startsWith(prefix))) {
+      event.preventDefault();
+      shell.openExternal(url);
     }
+  });
 
+  // Open all new-window requests (including OAuth popups) in the default browser.
+  win.webContents.setWindowOpenHandler(({ url }) => {
     shell.openExternal(url);
     return { action: "deny" };
   });
@@ -128,6 +199,20 @@ function setupAutoUpdater(): void {
   }
 }
 
+
+// macOS: deep link arrives as open-url on the already-running instance.
+app.on("open-url", (event, url) => {
+  event.preventDefault();
+  handleDeepLink(url);
+});
+
+// Windows/Linux: deep link causes a second instance launch; grab the URL from argv.
+app.on("second-instance", (_event, argv) => {
+  const url = argv.find((arg) => arg.startsWith("chatjs://"));
+  if (url) handleDeepLink(url);
+  mainWindow?.show();
+  mainWindow?.focus();
+});
 
 app.whenReady().then(() => {
   mainWindow = createWindow();

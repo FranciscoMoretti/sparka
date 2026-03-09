@@ -1,4 +1,7 @@
-export const APP_URL = "https://chatjs.dev";
+export const APP_URL =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:3000"
+    : "https://chatjs.dev";
 
 export const WINDOW_DEFAULTS = {
   width: 1280,

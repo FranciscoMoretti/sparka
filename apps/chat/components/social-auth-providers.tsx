@@ -38,13 +38,30 @@ function VercelIcon({ className }: { className?: string }) {
   );
 }
 
+function signIn(provider: "google" | "github" | "vercel") {
+  const isElectron = (
+    window as { electronAPI?: { isElectron?: boolean } }
+  ).electronAPI?.isElectron;
+
+  if (isElectron) {
+    // OAuth must be initiated in the user's browser so the state cookie is
+    // stored there (not in Electron's session). window.open() is intercepted
+    // by Electron's setWindowOpenHandler and forwarded to shell.openExternal().
+    window.open(
+      `${window.location.origin}/electron-auth?provider=${provider}`
+    );
+  } else {
+    authClient.signIn.social({ provider });
+  }
+}
+
 export function SocialAuthProviders() {
   return (
     <div className="space-y-2">
       {config.authentication.google ? (
         <Button
           className="w-full"
-          onClick={() => authClient.signIn.social({ provider: "google" })}
+          onClick={() => signIn("google")}
           type="button"
           variant="outline"
         >
@@ -55,7 +72,7 @@ export function SocialAuthProviders() {
       {config.authentication.github ? (
         <Button
           className="w-full"
-          onClick={() => authClient.signIn.social({ provider: "github" })}
+          onClick={() => signIn("github")}
           type="button"
           variant="outline"
         >
@@ -66,7 +83,7 @@ export function SocialAuthProviders() {
       {config.authentication.vercel ? (
         <Button
           className="w-full"
-          onClick={() => authClient.signIn.social({ provider: "vercel" })}
+          onClick={() => signIn("vercel")}
           type="button"
           variant="outline"
         >

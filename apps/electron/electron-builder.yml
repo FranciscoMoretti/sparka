@@ -27,6 +27,10 @@ mac:
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   gatekeeperAssess: false
+  protocols:
+    - name: ChatJS Auth
+      schemes:
+        - chatjs
 
 dmg:
   sign: false
@@ -36,6 +40,10 @@ win:
     - target: nsis
       arch:
         - x64
+  protocols:
+    - name: ChatJS Auth
+      schemes:
+        - chatjs
 
 nsis:
   oneClick: false
