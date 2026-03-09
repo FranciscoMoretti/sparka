@@ -8,6 +8,7 @@ directories:
 files:
   - dist/**
   - build/**
+  - entitlements.mac.plist
   - package.json
 
 publish:
@@ -24,8 +25,8 @@ mac:
         - arm64
   category: public.app-category.productivity
   hardenedRuntime: true
-  entitlements: build/entitlements.mac.plist
-  entitlementsInherit: build/entitlements.mac.plist
+  entitlements: entitlements.mac.plist
+  entitlementsInherit: entitlements.mac.plist
   gatekeeperAssess: false
   protocols:
     - name: ChatJS Auth
