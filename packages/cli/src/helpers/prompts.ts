@@ -181,6 +181,18 @@ export async function promptAuth(
   return auth;
 }
 
+export async function promptElectron(skipPrompt: boolean): Promise<boolean> {
+  if (skipPrompt) return false;
+
+  const wantsElectron = await confirm({
+    message: `Include an ${highlighter.info("Electron")} desktop app wrapper?`,
+    initialValue: false,
+  });
+  handleCancel(wantsElectron);
+
+  return wantsElectron;
+}
+
 export async function promptInstall(
   packageManager: string,
   skipPrompt: boolean

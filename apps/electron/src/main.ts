@@ -9,11 +9,11 @@ import {
   Tray,
 } from "electron";
 import { autoUpdater } from "electron-updater";
-import { APP_URL, TITLEBAR_HEIGHT, WINDOW_DEFAULTS } from "./config";
+import { APP_SCHEME, APP_URL, TITLEBAR_HEIGHT, WINDOW_DEFAULTS } from "./config";
 
-// Register chatjs:// as a protocol handler for OAuth deep-link callbacks.
+// Register the custom protocol as a handler for OAuth deep-link callbacks.
 // Must be called before app is ready.
-app.setAsDefaultProtocolClient("chatjs");
+app.setAsDefaultProtocolClient(APP_SCHEME);
 
 // On Windows, a second instance is launched when the OS opens a deep link.
 // We grab the URL from argv and quit the duplicate instance.
@@ -34,7 +34,7 @@ const OAUTH_HOSTS = [
 ];
 
 function isAuthCallbackUrl(url: URL): boolean {
-  if (url.protocol !== "chatjs:") {
+  if (url.protocol !== `${APP_SCHEME}:`) {
     return false;
   }
 
@@ -208,7 +208,7 @@ app.on("open-url", (event, url) => {
 
 // Windows/Linux: deep link causes a second instance launch; grab the URL from argv.
 app.on("second-instance", (_event, argv) => {
-  const url = argv.find((arg) => arg.startsWith("chatjs://"));
+  const url = argv.find((arg) => arg.startsWith(`${APP_SCHEME}://`));
   if (url) handleDeepLink(url);
   mainWindow?.show();
   mainWindow?.focus();
