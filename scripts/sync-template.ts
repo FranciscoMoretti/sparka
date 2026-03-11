@@ -79,7 +79,6 @@ const ELECTRON_EXCLUDED_FILES = new Set([
   ".DS_Store",
   "bun.lock",
   "bun.lockb",
-  "icon.png",
 ]);
 
 function shouldCopyElectronFilePath(filePath: string): boolean {

@@ -4,7 +4,9 @@ import { env } from "@/lib/env";
 
 function verifySignedToken(token: string): string | null {
   const dotIndex = token.lastIndexOf(".");
-  if (dotIndex === -1) return null;
+  if (dotIndex === -1) {
+    return null;
+  }
 
   const payload = token.slice(0, dotIndex);
   const sig = token.slice(dotIndex + 1);
@@ -29,12 +31,14 @@ function verifySignedToken(token: string): string | null {
     return null;
   }
 
-  if (!parsed.s || parsed.exp < Date.now()) return null;
+  if (!parsed.s || parsed.exp < Date.now()) {
+    return null;
+  }
 
   return parsed.s;
 }
 
-export async function GET(request: NextRequest) {
+export function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get("token");
 
   if (!token) {

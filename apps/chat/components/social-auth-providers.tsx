@@ -39,17 +39,14 @@ function VercelIcon({ className }: { className?: string }) {
 }
 
 function signIn(provider: "google" | "github" | "vercel") {
-  const isElectron = (
-    window as { electronAPI?: { isElectron?: boolean } }
-  ).electronAPI?.isElectron;
+  const isElectron = (window as { electronAPI?: { isElectron?: boolean } })
+    .electronAPI?.isElectron;
 
   if (isElectron) {
     // OAuth must be initiated in the user's browser so the state cookie is
     // stored there (not in Electron's session). window.open() is intercepted
     // by Electron's setWindowOpenHandler and forwarded to shell.openExternal().
-    window.open(
-      `${window.location.origin}/electron-auth?provider=${provider}`
-    );
+    window.open(`${window.location.origin}/electron-auth?provider=${provider}`);
   } else {
     authClient.signIn.social({ provider });
   }
