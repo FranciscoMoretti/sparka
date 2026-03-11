@@ -26,6 +26,8 @@
 		"publish:cli": "echo 'Legacy CLI-only publish path. Prefer bun run release for standard releases.' && bun run template:sync && bun --filter @chat-js/cli build && npm publish --ignore-scripts -w packages/cli",
 		"db:generate": "dotenv -e .env.local -- bun --filter=@chatjs/chat run db:generate",
 		"db:migrate": "dotenv -e .env.local -- bun --filter=@chatjs/chat run db:migrate",
+		"db:branch:start": "dotenv -e .env.local -- bun --filter=@chatjs/chat run db:branch:start",
+		"db:branch:stop": "dotenv -e .env.local -- bun --filter=@chatjs/chat run db:branch:stop",
 		"start:chat": "dotenv -e .env.local -- bun --filter=@chatjs/chat run start",
 		"release": "changeset publish"
 	},
