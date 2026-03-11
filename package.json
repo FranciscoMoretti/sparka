@@ -25,6 +25,8 @@
 		"chat-js": "bun --filter @chat-js/cli start",
 		"skiller:apply": "bunx skiller@latest apply && turbo run skiller:apply",
 		"publish:cli": "echo 'Legacy CLI-only publish path. Prefer bun run release for standard releases.' && bun run template:sync && bun --filter @chat-js/cli build && npm publish --ignore-scripts -w packages/cli",
+		"db:generate": "dotenv -e .env.local -- bun --filter=@chatjs/chat run db:generate",
+		"db:migrate": "dotenv -e .env.local -- bun --filter=@chatjs/chat run db:migrate",
 		"start:chat": "dotenv -e .env.local -- bun --filter=@chatjs/chat run start",
 		"release": "changeset publish"
 	},

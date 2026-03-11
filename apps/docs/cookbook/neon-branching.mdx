@@ -25,142 +25,34 @@ npm install -g neonctl
 neonctl auth
 ```
 
-Create a `.neon` file in your project root with your project ID (find it in your Neon dashboard):
-
-```json title=".neon"
-{
-  "projectId": "<your-project-id>"
-}
-```
-
-Alternatively, you can set the context via CLI:
+Set context to your project (find project ID in your Neon dashboard):
 
 ```bash
 neonctl set-context --project-id <your-project-id>
 ```
 
+This creates a `.neon` file in the current directory (gitignored).
+
+### How It Works
+
+Instead of updating `.env.local`, the branch name is stored in a `.neon-branch` file (gitignored). The `scripts/with-db.sh` wrapper reads this file at runtime and injects the correct `DATABASE_URL` when running database commands.
+
+This means your `.env.local` stays pointing to main, and branch switching is instant.
+
 ### Helper Scripts
 
-Add these scripts to your `package.json`:
+The `package.json` scripts use three bash scripts under `scripts/`:
 
 ```json title="package.json"
 {
   "scripts": {
-    "db:branch:start": "node scripts/neon-branch.js start",
-    "db:branch:stop": "node scripts/neon-branch.js stop",
-    "db:branch:use": "node scripts/neon-branch.js use",
-    "db:branch:create": "node scripts/neon-branch.js create",
-    "db:branch:delete": "node scripts/neon-branch.js delete",
-    "db:branch:list": "neonctl branches list"
+    "db:branch:start": "bash -c 'N=${1:-dev-local}; bun db:branch:create $N && bun db:branch:use $N' --",
+    "db:branch:stop": "bash -c 'N=${1:-dev-local}; bun db:branch:use main && bun db:branch:delete $N' --",
+    "db:branch:use": "bash scripts/db-branch-use.sh",
+    "db:branch:create": "bash scripts/db-branch-create.sh",
+    "db:branch:delete": "bash scripts/db-branch-delete.sh",
+    "db:branch:list": "bunx neonctl branches list"
   }
-}
-```
-
-### Branch Script
-
-```js title="scripts/neon-branch.js"
-#!/usr/bin/env node
-const { execSync } = require("child_process");
-const fs = require("fs");
-const path = require("path");
-
-const DEFAULT_BRANCH = "dev-local";
-const ENV_FILE = ".env.local";
-
-function exec(cmd) {
-  return execSync(cmd, { encoding: "utf-8" }).trim();
-}
-
-function getBranchConnectionString(branchName) {
-  const output = exec(`neonctl branches get ${branchName} --output json`);
-  const branch = JSON.parse(output);
-
-  // Get the connection string for the branch
-  const connOutput = exec(
-    `neonctl connection-string ${branchName} --output json`
-  );
-  const conn = JSON.parse(connOutput);
-  return conn.connection_string;
-}
-
-function updateEnvFile(connectionString) {
-  const envPath = path.join(process.cwd(), ENV_FILE);
-  let content = "";
-
-  if (fs.existsSync(envPath)) {
-    content = fs.readFileSync(envPath, "utf-8");
-  }
-
-  // Update or add DATABASE_URL
-  if (content.includes("DATABASE_URL=")) {
-    content = content.replace(
-      /DATABASE_URL=.*/,
-      `DATABASE_URL=${connectionString}`
-    );
-  } else {
-    content += `\nDATABASE_URL=${connectionString}\n`;
-  }
-
-  fs.writeFileSync(envPath, content);
-  console.log(`Updated ${ENV_FILE} with new DATABASE_URL`);
-}
-
-const [, , command, branchName = DEFAULT_BRANCH] = process.argv;
-
-switch (command) {
-  case "create":
-    exec(`neonctl branches create --name ${branchName}`);
-    console.log(`Created branch: ${branchName}`);
-    break;
-
-  case "delete":
-    exec(`neonctl branches delete ${branchName}`);
-    console.log(`Deleted branch: ${branchName}`);
-    break;
-
-  case "use":
-    const connString = getBranchConnectionString(branchName);
-    updateEnvFile(connString);
-    console.log(`Switched to branch: ${branchName}`);
-    break;
-
-  case "start":
-    // Create and switch to branch
-    try {
-      exec(`neonctl branches create --name ${branchName}`);
-      console.log(`Created branch: ${branchName}`);
-    } catch {
-      console.log(`Branch ${branchName} already exists`);
-    }
-    const startConn = getBranchConnectionString(branchName);
-    updateEnvFile(startConn);
-    console.log(`Switched to branch: ${branchName}`);
-    break;
-
-  case "stop":
-    // Delete branch and switch to main
-    const mainConn = getBranchConnectionString("main");
-    updateEnvFile(mainConn);
-    try {
-      exec(`neonctl branches delete ${branchName}`);
-      console.log(`Deleted branch: ${branchName}`);
-    } catch {
-      console.log(`Branch ${branchName} not found`);
-    }
-    console.log("Switched to main branch");
-    break;
-
-  default:
-    console.log(`
-Usage: node neon-branch.js <command> [branch-name]
-
-Commands:
-  start [name]   Create branch and switch to it (default: dev-local)
-  stop [name]    Delete branch and switch to main
-  use [name]     Switch to existing branch
-  create [name]  Create branch only
-  delete [name]  Delete branch only
-    `);
 }
 ```
 
@@ -170,29 +62,30 @@ Commands:
 
 ```bash
 # Start working on schema changes
-npm run db:branch:start
+bun db:branch:start
 
-# Your app now uses the dev branch
-npm run dev
+# Your app now uses the dev branch (DATABASE_URL injected via with-db.sh)
+bun dev
 
 # Make schema changes
-npm run db:generate   # Generate migration
-npm run db:migrate    # Apply migration
+bun db:generate   # Generate migration
+bun db:migrate    # Apply migration
 
-# When done, merge to main and clean up
-npm run db:branch:stop
+# When done, clean up and switch back to main
+bun db:branch:stop
 ```
 
 ### Commands Reference
 
-| Command                         | Description                   |
-| ------------------------------- | ----------------------------- |
-| `npm run db:branch:start [name]`  | Create and switch to branch   |
-| `npm run db:branch:stop [name]`   | Delete branch, switch to main |
-| `npm run db:branch:use [name]`    | Switch to branch              |
-| `npm run db:branch:create [name]` | Create branch only            |
-| `npm run db:branch:delete [name]` | Delete branch only            |
-| `npm run db:branch:list`          | List all branches             |
+| Command                          | Description                                        |
+| -------------------------------- | -------------------------------------------------- |
+| `bun db:branch:start [name]`     | Create branch and switch to it (default: dev-local) |
+| `bun db:branch:stop [name]`      | Switch to main and delete branch                   |
+| `bun db:branch:use [name]`       | Switch to existing branch (writes `.neon-branch`)  |
+| `bun db:branch:use main`         | Switch back to main (removes `.neon-branch`)       |
+| `bun db:branch:create [name]`    | Create branch only                                 |
+| `bun db:branch:delete [name]`    | Delete branch only                                 |
+| `bun db:branch:list`             | List all branches                                  |
 
 Default branch name is `dev-local` if not specified.
 
