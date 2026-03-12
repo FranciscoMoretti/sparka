@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from "react";
 
+declare module "react" {
+  interface CSSProperties {
+    WebkitAppRegion?: string;
+  }
+}
+
 type ElectronWindow = Window & {
   electronAPI?: {
     titlebarHeight?: number;
