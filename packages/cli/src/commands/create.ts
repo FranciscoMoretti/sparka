@@ -215,7 +215,7 @@ export const create = new Command()
 				logger.break();
 				logger.info("Electron desktop app:");
 				logger.log(
-					`  Run the web app first, then: ${highlighter.info(`cd ${projectName}/electron && ${packageManager} install && ${packageManager} run dev`)}`,
+					`  Run the web app first, then: ${highlighter.info(`cd electron && bun install && bun run dev`)}`,
 				);
 			}
 			logger.break();

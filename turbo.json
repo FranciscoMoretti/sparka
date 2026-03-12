@@ -68,8 +68,8 @@
     },
     "electron:build": {
       "cache": true,
-      "inputs": ["src/**", "package.json", "tsconfig.json"],
-      "outputs": ["dist/**"]
+      "inputs": ["src/**", "package.json", "tsconfig.json", "icon.png", "scripts/**"],
+      "outputs": ["dist/**", "build/**"]
     },
     "electron:dev": {
       "cache": false,

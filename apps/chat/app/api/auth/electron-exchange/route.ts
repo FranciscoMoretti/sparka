@@ -31,7 +31,7 @@ function verifySignedToken(token: string): string | null {
     return null;
   }
 
-  if (!parsed.s || parsed.exp < Date.now()) {
+  if (!parsed.s || typeof parsed.exp !== "number" || parsed.exp < Date.now()) {
     return null;
   }
 

@@ -23,8 +23,9 @@ my-app/
 │   │   ├── main.ts             # Main process: window, tray, deep links, auto-updater
 │   │   ├── preload.ts          # Context bridge (contextIsolation enabled)
 │   │   └── config.ts           # APP_URL, APP_SCHEME, window dimensions
+│   ├── icon.png                # App icon (512×512 PNG, edit this)
 │   ├── build/
-│   │   ├── icon.png            # App icon (512×512 PNG)
+│   │   ├── icon.png            # Copied from icon.png (generated)
 │   │   └── icon.icns           # macOS icon (generated)
 │   ├── electron-builder.yml    # Build config: appId, productName, targets, protocols
 │   ├── entitlements.mac.plist  # macOS hardened runtime entitlements
@@ -66,7 +67,7 @@ sequenceDiagram
 
     E->>B: Open /electron-auth in default browser
     B->>W: User completes OAuth login
-    W->>W: POST /api/auth/electron-callback
+    W->>W: GET /api/auth/electron-callback
     W->>B: Redirect to yourapp://auth/callback?token=...
     B->>E: OS delivers deep link to Electron
     E->>W: GET /api/auth/electron-exchange?token=...

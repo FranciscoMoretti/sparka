@@ -24,6 +24,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
   sips -z 256  256  "$SRC" --out "$ICONSET/icon_256x256.png"   >/dev/null
   sips -z 512  512  "$SRC" --out "$ICONSET/icon_256x256@2x.png" >/dev/null
   cp "$SRC"                     "$ICONSET/icon_512x512.png"
+  sips -z 1024 1024 "$SRC" --out "$ICONSET/icon_512x512@2x.png" >/dev/null
   iconutil -c icns "$ICONSET" -o "$BUILD/icon.icns"
   rm -rf "$TMPDIR"
   echo "Generated build/icon.icns"
