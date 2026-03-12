@@ -53,7 +53,7 @@ The CLI walks you through gateway, features, and auth choices, generates `chat.c
 - [Tailwind CSS](https://tailwindcss.com) - Styling
 - [tRPC](https://trpc.io) - End-to-end type-safe APIs
 - [Zod](https://zod.dev) - Schema validation
-- [Zustand](https://docs.pmnd.rs/zustand) - State management
+- [Zustand](https://zustand.docs.pmnd.rs/) - State management
 - [Motion](https://motion.dev) - Animations
 - [t3-env](https://env.t3.gg) - Environment variables
 - [Pino](https://getpino.io) - Structured Logging
@@ -62,7 +62,7 @@ The CLI walks you through gateway, features, and auth choices, generates `chat.c
 - [Biome](https://biomejs.dev) - Code linting and formatting
 - [Ultracite](https://ultracite.ai) - Biome preset for humans and AI
 - [Streamdown](https://streamdown.ai/) - Markdown for AI streaming
-- [AI Elements](https://ai-sdk.dev/elements/overview) - AI-native Components
+- [AI Elements](https://elements.ai-sdk.dev/overview) - AI-native Components
 - [AI SDK Tools](https://ai-sdk-tools.dev/) - Developer tools for AI SDK
 
 ## Monorepo Layout
