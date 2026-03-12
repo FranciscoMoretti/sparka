@@ -36,6 +36,7 @@ The CLI walks you through gateway, features, and auth choices, generates `chat.c
 - **Image Generation**: AI-powered image creation
 - **Code Execution**: Run code snippets in sandbox
 - **MCP**: Model Context Protocol support
+- **Desktop App**: Package as a native macOS, Windows, or Linux app with Electron
 
 ## Stack
 
