@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { config } from "@/lib/config";
-import { ElectronAuthSuccessClient } from "./success-client";
+import { ElectronAuthSuccessClient } from "./client";
 
 export default function ElectronAuthSuccess() {
   return (

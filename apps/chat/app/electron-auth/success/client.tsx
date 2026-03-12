@@ -30,16 +30,11 @@ export function ElectronAuthSuccessClient({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 text-center">
       <div className="space-y-2">
-        <h1 className="font-semibold text-2xl">Signed in successfully!</h1>
+        <h1 className="font-semibold text-2xl">Signed in successfully</h1>
         <p className="text-muted-foreground text-sm">
           {launched
-            ? "You can close this tab — the app is opening."
+            ? "You can close this tab."
             : "Opening the app\u2026"}
-        </p>
-        <p className="text-muted-foreground text-xs">
-          If nothing happens, open the packaged app and try again. macOS custom
-          protocol links do not register reliably from `electron .` in
-          development.
         </p>
       </div>
       {launched && (

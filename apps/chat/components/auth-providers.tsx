@@ -1,6 +1,7 @@
 "use client";
 
 import { Github } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import authClient from "@/lib/auth-client";
 import { config } from "@/lib/config";
@@ -38,21 +39,41 @@ function VercelIcon({ className }: { className?: string }) {
   );
 }
 
-function signIn(provider: "google" | "github" | "vercel") {
-  const isElectron = (window as { electronAPI?: { isElectron?: boolean } })
-    .electronAPI?.isElectron;
+export function SocialAuthProviders({
+  callbackURL,
+}: { callbackURL?: string } = {}) {
+  const [isElectron, setIsElectron] = useState(false);
 
+  useEffect(() => {
+    setIsElectron(
+      Boolean(
+        (window as { electronAPI?: { isElectron?: boolean } }).electronAPI
+          ?.isElectron
+      )
+    );
+  }, []);
+
+  // In the Electron app, delegate provider selection to the web browser.
+  // window.open() is intercepted by Electron's setWindowOpenHandler and
+  // forwarded to shell.openExternal(), so OAuth state cookies are stored in
+  // the browser (not in Electron's session), preventing state_mismatch errors.
   if (isElectron) {
-    // OAuth must be initiated in the user's browser so the state cookie is
-    // stored there (not in Electron's session). window.open() is intercepted
-    // by Electron's setWindowOpenHandler and forwarded to shell.openExternal().
-    window.open(`${window.location.origin}/electron-auth?provider=${provider}`);
-  } else {
-    authClient.signIn.social({ provider });
+    return (
+      <Button
+        className="w-full"
+        onClick={() => window.open(`${window.location.origin}/electron-auth`)}
+        type="button"
+        variant="outline"
+      >
+        Sign in via browser
+      </Button>
+    );
   }
-}
 
-export function SocialAuthProviders() {
+  function signIn(provider: "google" | "github" | "vercel") {
+    authClient.signIn.social({ provider, ...(callbackURL ? { callbackURL } : {}) });
+  }
+
   return (
     <div className="space-y-2">
       {config.authentication.google ? (

@@ -1,34 +1,42 @@
-"use client";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { SocialAuthProviders } from "@/components/auth-providers";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { auth } from "@/lib/auth";
 
-import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
-import authClient from "@/lib/auth-client";
+// Opened in the user's default browser by the Electron app.
+// If already authenticated, immediately exchanges the session for a token and
+// returns the user to the app. Otherwise shows provider selection so the user
+// can sign in — OAuth state cookies are stored here (not in Electron), which
+// prevents the state_mismatch error.
+export default async function ElectronAuth() {
+  const session = await auth.api.getSession({ headers: await headers() });
 
-// This page is opened in the user's default browser by the Electron app.
-// It initiates the OAuth flow here so the state cookie is stored in the
-// browser (not in Electron), which prevents the state_mismatch error.
-export default function ElectronAuth() {
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    const provider = searchParams.get("provider");
-    if (
-      provider === "google" ||
-      provider === "github" ||
-      provider === "vercel"
-    ) {
-      authClient.signIn.social({
-        provider,
-        callbackURL: "/api/auth/electron-callback",
-      });
-    }
-  }, [searchParams]);
+  if (session) {
+    redirect("/api/auth/electron-callback");
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center">
-      <p className="text-muted-foreground text-sm">
-        Redirecting to sign in&hellip;
-      </p>
+      <div className="w-full max-w-sm px-4">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl">Sign in</CardTitle>
+            <CardDescription>
+              You&apos;ll be returned to the app after signing in
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SocialAuthProviders callbackURL="/api/auth/electron-callback" />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

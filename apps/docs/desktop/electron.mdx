@@ -1,0 +1,165 @@
+---
+title: "Electron Desktop App"
+description: "Package your ChatJS app as a native desktop application for macOS, Windows, and Linux"
+---
+
+The Electron integration wraps your Next.js web app in a native desktop shell. The Electron process loads your deployed (or local dev) web app in a `BrowserWindow` and handles platform-level concerns: system tray, OAuth deep links, auto-updates, and native title bar styling.
+
+## Scaffold with the CLI
+
+When you run `npx @chat-js/cli@latest create`, the CLI asks:
+
+```
+Include an Electron desktop app? › No / Yes
+```
+
+Choosing **Yes** copies the Electron template into an `electron/` subfolder inside your project:
+
+```
+my-app/
+├── app/                        # Next.js app (unchanged)
+├── electron/
+│   ├── src/
+│   │   ├── main.ts             # Main process: window, tray, deep links, auto-updater
+│   │   ├── preload.ts          # Context bridge (contextIsolation enabled)
+│   │   └── config.ts           # APP_URL, APP_SCHEME, window dimensions
+│   ├── build/
+│   │   ├── icon.png            # App icon (512×512 PNG)
+│   │   └── icon.icns           # macOS icon (generated)
+│   ├── electron-builder.yml    # Build config: appId, productName, targets, protocols
+│   ├── entitlements.mac.plist  # macOS hardened runtime entitlements
+│   └── package.json
+└── chat.config.ts
+```
+
+The CLI also pre-fills `electron-builder.yml` and `src/config.ts` with your project name, app ID, and URL scheme derived from your project name.
+
+## Development
+
+Start the Next.js web app first, then launch Electron pointing at `localhost:3000`:
+
+```bash
+# Terminal 1 — web app
+npm run dev
+
+# Terminal 2 — Electron
+cd electron
+bun install
+bun run dev
+```
+
+In development, `src/config.ts` sets `APP_URL` to `http://localhost:3000` automatically when `NODE_ENV === "development"`.
+
+DevTools open in a detached window automatically in development mode.
+
+## Authentication
+
+OAuth cannot redirect back to a traditional `http://` URL inside Electron. The integration solves this with a **custom URL scheme deep link**.
+
+### How it works
+
+```mermaid
+sequenceDiagram
+    participant E as Electron app
+    participant B as Default browser
+    participant W as Your web app
+
+    E->>B: Open /electron-auth in default browser
+    B->>W: User completes OAuth login
+    W->>W: POST /api/auth/electron-callback
+    W->>B: Redirect to yourapp://auth/callback?token=...
+    B->>E: OS delivers deep link to Electron
+    E->>W: GET /api/auth/electron-exchange?token=...
+    W->>E: Returns session token
+    E->>E: Sets better-auth.session_token cookie
+    E->>E: Reloads BrowserWindow
+```
+
+The exchange token is a short-lived HMAC-signed value (60 second expiry) derived from your `AUTH_SECRET`. No database or shared state is required.
+
+Your web app already includes the two API routes that support this:
+
+- `GET /api/auth/electron-callback` — reads the session cookie after OAuth completes, signs it into a short-lived token, and redirects to the deep link URL
+- `GET /api/auth/electron-exchange?token=...` — verifies the signed token and returns the raw session token so Electron can set the cookie
+
+### Configuring the URL scheme
+
+The `APP_SCHEME` in `electron/src/config.ts` sets the custom protocol (e.g. `myapp`), which produces deep links like `myapp://auth/callback`. It must match the `schemes` entries in `electron-builder.yml`. The CLI sets both automatically from your project name.
+
+If you rename the scheme later, update it in both files.
+
+## System Tray
+
+The app minimizes to the system tray instead of quitting when you close the window. The tray icon shows a context menu with **Show** and **Quit** options.
+
+Closing the window hides it. Use **Quit** from the tray to fully exit.
+
+## Auto-Updates
+
+The integration uses `electron-updater` with GitHub Releases as the update source. When a packaged app starts, it checks for updates automatically and installs them on next quit.
+
+The `publish` block in `electron-builder.yml` controls the GitHub repository:
+
+```yaml
+publish:
+  provider: github
+  owner: your-github-username
+  repo: your-repo-name
+  releaseType: release
+```
+
+Updates only run when the app is packaged (`app.isPackaged`). They are skipped in development.
+
+## Customization
+
+### App icon
+
+Replace `electron/icon.png` with your own 512x512 PNG, then regenerate platform icons:
+
+```bash
+cd electron
+npm run generate-icons
+```
+
+This produces `build/icon.png` and `build/icon.icns` (macOS).
+
+### App name and ID
+
+Edit `electron/electron-builder.yml`:
+
+```yaml
+productName: My App          # Display name shown in the OS
+appId: com.yourcompany.myapp # Reverse-DNS bundle identifier
+```
+
+### Production URL
+
+Update `APP_URL` in `electron/src/config.ts` with your deployed web app URL:
+
+```ts
+export const APP_URL =
+  process.env.NODE_ENV === "development"
+    ? "http://localhost:3000"
+    : "https://your-app.vercel.app"; // your production URL
+```
+
+## Building for Distribution
+
+Build a distributable installer with one of the platform commands:
+
+```bash
+cd electron
+bun run dist:mac    # macOS .dmg (x64 + arm64)
+bun run dist:win    # Windows NSIS installer (x64)
+bun run dist:linux  # Linux AppImage (x64)
+```
+
+Built artifacts are placed in `electron/release/`. To install:
+
+- **macOS** — run `open release/ChatJS-0.1.0-arm64.dmg`, then drag the app to your Applications folder
+- **Windows** — run the `.exe` installer
+- **Linux** — make the `.AppImage` executable and run it
+
+To test the packaged build without creating an installer, use `bun run package`. This produces an unpacked app directory in `release/` that you can launch directly without going through an install step.
+
+For macOS distribution outside the App Store, the build uses hardened runtime with the entitlements in `entitlements.mac.plist`. Notarization requires additional setup with your Apple Developer account.

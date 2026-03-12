@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { SocialAuthProviders } from "@/components/social-auth-providers";
+import { SocialAuthProviders } from "@/components/auth-providers";
 import {
   Card,
   CardContent,
@@ -20,7 +20,7 @@ export function LoginForm({
       <Card>
         <CardHeader className="text-center">
           <CardTitle className="text-xl">Welcome back</CardTitle>
-          <CardDescription>Continue with a social provider</CardDescription>
+          <CardDescription>Sign in to your account</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6">
