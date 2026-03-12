@@ -41,7 +41,9 @@ function VercelIcon({ className }: { className?: string }) {
 
 export function SocialAuthProviders({
   callbackURL,
-}: { callbackURL?: string } = {}) {
+}: {
+  callbackURL?: string;
+} = {}) {
   const [isElectron, setIsElectron] = useState(false);
 
   useEffect(() => {
@@ -71,7 +73,10 @@ export function SocialAuthProviders({
   }
 
   function signIn(provider: "google" | "github" | "vercel") {
-    authClient.signIn.social({ provider, ...(callbackURL ? { callbackURL } : {}) });
+    authClient.signIn.social({
+      provider,
+      ...(callbackURL ? { callbackURL } : {}),
+    });
   }
 
   return (

@@ -32,9 +32,7 @@ export function ElectronAuthSuccessClient({
       <div className="space-y-2">
         <h1 className="font-semibold text-2xl">Signed in successfully</h1>
         <p className="text-muted-foreground text-sm">
-          {launched
-            ? "You can close this tab."
-            : "Opening the app\u2026"}
+          {launched ? "You can close this tab." : "Opening the app\u2026"}
         </p>
       </div>
       {launched && (

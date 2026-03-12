@@ -83,8 +83,9 @@ const PureUserMessage = ({
                 if (
                   selection?.toString() &&
                   e.currentTarget.contains(selection.anchorNode)
-                )
+                ) {
                   return;
+                }
                 setMode("edit");
               }}
               type="button"
