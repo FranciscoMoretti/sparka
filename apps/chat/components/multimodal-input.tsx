@@ -66,6 +66,7 @@ const PROJECT_CHAT_ROUTE_REGEX = /^\/project\/([^/]+)(?:\/chat\/[^/]+)?$/;
 
 interface ParallelRequestSpec {
   assistantMessageId: string;
+  createdAt: Date;
   isPrimary: boolean;
   modelId: AppModelId;
   parallelGroupId: string;
@@ -439,15 +440,43 @@ function PureMultimodalInput({
         }),
       });
 
-      await Promise.allSettled(
+      const results = await Promise.allSettled(
         secondaryRequestSpecs.map((requestSpec) =>
           drainSecondaryParallelRequest({ message, requestSpec })
         )
       );
 
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          return;
+        }
+
+        const failedRequestSpec = secondaryRequestSpecs[index];
+        if (!failedRequestSpec) {
+          return;
+        }
+
+        addMessageToTree({
+          id: failedRequestSpec.assistantMessageId,
+          parts: [],
+          role: "assistant",
+          metadata: {
+            createdAt: failedRequestSpec.createdAt,
+            parentMessageId: message.id,
+            parallelGroupId: failedRequestSpec.parallelGroupId,
+            parallelIndex: failedRequestSpec.parallelIndex,
+            isPrimaryParallel: failedRequestSpec.isPrimary,
+            selectedModel: failedRequestSpec.modelId,
+            activeStreamId: null,
+            selectedTool: undefined,
+          },
+        });
+      });
+
       await invalidatePersistedMessages();
     },
     [
+      addMessageToTree,
       chatId,
       drainSecondaryParallelRequest,
       getCurrentProjectId,
@@ -474,6 +503,7 @@ function PureMultimodalInput({
       ? requestedModelIds.map(
           (modelId, parallelIndex): ParallelRequestSpec => ({
             assistantMessageId: generateUUID(),
+            createdAt: new Date(Date.now() + parallelIndex),
             isPrimary: parallelIndex === 0,
             modelId,
             parallelGroupId: parallelGroupId || generateUUID(),
@@ -531,7 +561,7 @@ function PureMultimodalInput({
           parts: [],
           role: "assistant",
           metadata: {
-            createdAt: new Date(Date.now() + requestSpec.parallelIndex),
+            createdAt: requestSpec.createdAt,
             parentMessageId: message.id,
             parallelGroupId: requestSpec.parallelGroupId,
             parallelIndex: requestSpec.parallelIndex,

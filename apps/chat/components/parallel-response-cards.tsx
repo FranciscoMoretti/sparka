@@ -48,6 +48,38 @@ function PureParallelResponseCards({
     });
   }, [message, parallelGroupInfo]);
 
+  const sortedCardSlots = useMemo(() => {
+    return [...cardSlots].sort((left, right) => {
+      const leftModelId =
+        left.message?.metadata.selectedModel
+          ? getPrimarySelectedModelId(left.message.metadata.selectedModel)
+          : left.modelId;
+      const rightModelId =
+        right.message?.metadata.selectedModel
+          ? getPrimarySelectedModelId(right.message.metadata.selectedModel)
+          : right.modelId;
+
+      const leftModelName = leftModelId
+        ? getModelById(leftModelId)?.name ?? leftModelId
+        : "Model";
+      const rightModelName = rightModelId
+        ? getModelById(rightModelId)?.name ?? rightModelId
+        : "Model";
+
+      const modelNameComparison = leftModelName.localeCompare(rightModelName);
+      if (modelNameComparison !== 0) {
+        return modelNameComparison;
+      }
+
+      const leftMessageId =
+        left.message?.id ?? `${left.modelId}:${left.parallelIndex}`;
+      const rightMessageId =
+        right.message?.id ?? `${right.modelId}:${right.parallelIndex}`;
+
+      return leftMessageId.localeCompare(rightMessageId);
+    });
+  }, [cardSlots, getModelById]);
+
   const selectedParallelIndex = useMemo(() => {
     if (parallelGroupInfo?.selectedMessageId) {
       const selectedMessage = parallelGroupInfo.messages.find(
@@ -61,13 +93,13 @@ function PureParallelResponseCards({
     return cardSlots.length > 0 ? 0 : null;
   }, [cardSlots.length, parallelGroupInfo]);
 
-  if (cardSlots.length <= 1) {
+  if (sortedCardSlots.length <= 1) {
     return null;
   }
 
   return (
     <div className="mt-3 flex flex-wrap gap-2">
-      {cardSlots.map((slot) => {
+      {sortedCardSlots.map((slot) => {
         const modelId =
           slot.message?.metadata.selectedModel
             ? getPrimarySelectedModelId(slot.message.metadata.selectedModel)

@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRightIcon, ChevronUpIcon, FilterIcon, MinusIcon, PlusIcon } from "lucide-react";
+import { CheckIcon, ChevronRightIcon, ChevronUpIcon, FilterIcon } from "lucide-react";
 import Link from "next/link";
 import {
 	memo,
@@ -24,12 +24,19 @@ import {
 	CommandList,
 	CommandItem as UICommandItem,
 } from "@/components/ui/command";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { LoginCtaBanner } from "@/components/upgrade-cta/login-cta-banner";
 import type { AppModelDefinition, AppModelId } from "@/lib/ai/app-models";
 import {
@@ -171,38 +178,39 @@ function PureCommandItem({
 			<div className="flex shrink-0 items-center gap-1">
 				{featureIcons}
 				{isSelected && onCountChange && count !== undefined && (
-					<fieldset
-						className="flex items-center gap-0.5 border-none p-0"
-						onClick={(e) => e.stopPropagation()}
-						onKeyDown={(e) => e.stopPropagation()}
-						onMouseDown={(e) => e.stopPropagation()}
-					>
-						<button
-							className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-							onClick={(e) => {
-								e.stopPropagation();
-								e.preventDefault();
-								onCountChange(-1);
-							}}
-							type="button"
+					<DropdownMenu>
+						<DropdownMenuTrigger
+							asChild
+							onClick={(e) => e.stopPropagation()}
+							onMouseDown={(e) => e.stopPropagation()}
 						>
-							<MinusIcon className="h-3 w-3" />
-						</button>
-						<span className="min-w-[24px] text-center font-medium text-xs tabular-nums">
-							{count}x
-						</span>
-						<button
-							className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
-							onClick={(e) => {
-								e.stopPropagation();
-								e.preventDefault();
-								onCountChange(1);
-							}}
-							type="button"
+							<button
+								className="min-w-[28px] rounded px-1 py-0.5 text-center font-medium text-muted-foreground text-xs tabular-nums hover:bg-muted hover:text-foreground"
+								type="button"
+							>
+								{count}x
+							</button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent
+							align="end"
+							onKeyDown={(e) => e.stopPropagation()}
 						>
-							<PlusIcon className="h-3 w-3" />
-						</button>
-					</fieldset>
+							{[1, 2, 3, 4].map((n) => (
+								<DropdownMenuItem
+									key={n}
+									onClick={(e) => {
+										e.stopPropagation();
+										onCountChange(n - count);
+									}}
+								>
+									{n}x
+									{n === count && (
+										<CheckIcon className="ml-auto h-3 w-3" />
+									)}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
 				)}
 			</div>
 		</UICommandItem>
@@ -522,25 +530,6 @@ function PureModelSelector({
 								}}
 								placeholder="Search models..."
 							/>
-							{!isAnonymous && (
-								<div className="border-l px-3 py-2">
-									<div className="flex items-center gap-2">
-										<Label
-											className="cursor-pointer whitespace-nowrap text-xs"
-											htmlFor="use-multiple-models"
-										>
-											Multi
-										</Label>
-										<Checkbox
-											checked={useMultipleModels}
-											id="use-multiple-models"
-											onCheckedChange={(checked) =>
-												handleMultipleModelsToggle(Boolean(checked))
-											}
-										/>
-									</div>
-								</div>
-							)}
 							<Popover onOpenChange={setFilterOpen} open={filterOpen}>
 								<PopoverTrigger asChild>
 									<Button
@@ -610,6 +599,21 @@ function PureModelSelector({
 								</PopoverContent>
 							</Popover>
 						</div>
+						{!isAnonymous && (
+							<div className="flex items-center justify-between border-b px-3 py-2">
+								<Label
+									className="cursor-pointer text-sm"
+									htmlFor="use-multiple-models"
+								>
+									Use Multiple Models
+								</Label>
+								<Switch
+									checked={useMultipleModels}
+									id="use-multiple-models"
+									onCheckedChange={handleMultipleModelsToggle}
+								/>
+							</div>
+						)}
 						{hasDisabledModels && (
 							<div className="p-3">
 								<LoginCtaBanner

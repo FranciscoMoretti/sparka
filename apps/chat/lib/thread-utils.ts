@@ -5,6 +5,7 @@ export interface MessageNode {
     parentMessageId: string | null;
     parallelGroupId?: string | null;
     parallelIndex?: number | null;
+    activeStreamId?: string | null;
     createdAt: Date;
   };
 }

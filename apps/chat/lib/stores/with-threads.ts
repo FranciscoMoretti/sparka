@@ -72,17 +72,42 @@ export const withThreads =
     const rebuildMap = (msgs: UI_MESSAGE[]) =>
       buildChildrenMap(msgs as (UI_MESSAGE & MessageNode)[]);
 
-    const mergeMessagesById = (
-      baseMessages: UI_MESSAGE[],
-      overlayMessages: UI_MESSAGE[]
+    const isPendingParallelShell = (message: UI_MESSAGE) => {
+      const metadata = (
+        message as UI_MESSAGE & {
+          metadata?: {
+            activeStreamId?: string | null;
+            parallelGroupId?: string | null;
+          };
+        }
+      ).metadata;
+
+      return (
+        message.role === "assistant" &&
+        !!metadata?.parallelGroupId &&
+        typeof metadata.activeStreamId === "string" &&
+        metadata.activeStreamId.startsWith("pending:")
+      );
+    };
+
+    const mergeTreeMessages = (
+      serverMessages: UI_MESSAGE[],
+      existingTreeMessages: UI_MESSAGE[],
+      currentVisibleMessages: UI_MESSAGE[]
     ): UI_MESSAGE[] => {
       const merged = new Map<string, UI_MESSAGE>();
 
-      for (const message of baseMessages) {
+      for (const message of serverMessages) {
         merged.set(message.id, message);
       }
 
-      for (const message of overlayMessages) {
+      for (const message of existingTreeMessages) {
+        if (!merged.has(message.id) && isPendingParallelShell(message)) {
+          merged.set(message.id, message);
+        }
+      }
+
+      for (const message of currentVisibleMessages) {
         merged.set(message.id, message);
       }
 
@@ -122,7 +147,12 @@ export const withThreads =
 
       setAllMessages: (messages: UI_MESSAGE[]) => {
         const currentVisibleMessages = get().messages;
-        const mergedMessages = mergeMessagesById(messages, currentVisibleMessages);
+        const existingTreeMessages = get().allMessages;
+        const mergedMessages = mergeTreeMessages(
+          messages,
+          existingTreeMessages,
+          currentVisibleMessages
+        );
         const currentLeafId = currentVisibleMessages.at(-1)?.id;
         const nextVisibleThread = currentLeafId
           ? (buildThreadFromLeaf(
