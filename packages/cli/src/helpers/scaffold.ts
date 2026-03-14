@@ -47,11 +47,19 @@ export async function scaffoldElectron(
   const appId = `com.example.${opts.projectName}`;
   const builder = (await readFile(builderPath, "utf8"))
     .replace("__APP_ID__", appId)
-    .replace("__PRODUCT_NAME__", opts.appName)
+    .replaceAll("__PRODUCT_NAME__", opts.appName)
     .replace("__GITHUB_OWNER__", "your-github-username")
     .replace("__GITHUB_REPO__", opts.projectName)
     .replaceAll("__APP_SCHEME__", appScheme);
   await writeFile(builderPath, builder);
+
+  // Inject package.json placeholder
+  const packageJsonPath = join(destination, "package.json");
+  const packageJson = (await readFile(packageJsonPath, "utf8")).replace(
+    "__PROJECT_NAME__-electron",
+    `${opts.projectName}-electron`
+  );
+  await writeFile(packageJsonPath, packageJson);
 }
 
 export async function scaffoldFromGit(

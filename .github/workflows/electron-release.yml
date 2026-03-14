@@ -29,6 +29,12 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      - name: Set version from tag
+        working-directory: apps/electron
+        run: |
+          VERSION="${GITHUB_REF_NAME#electron-v}"
+          npm version "$VERSION" --no-git-tag-version
+
       - name: Build and publish macOS
         working-directory: apps/electron
         run: bun run publish
@@ -55,6 +61,12 @@ jobs:
 
       - run: bun install --frozen-lockfile
 
+      - name: Set version from tag
+        working-directory: apps/electron
+        run: |
+          VERSION="${GITHUB_REF_NAME#electron-v}"
+          npm version "$VERSION" --no-git-tag-version
+
       - name: Build and publish Windows
         working-directory: apps/electron
         run: bun run publish
@@ -80,6 +92,12 @@ jobs:
           restore-keys: ${{ runner.os }}-bun-
 
       - run: bun install --frozen-lockfile
+
+      - name: Set version from tag
+        working-directory: apps/electron
+        run: |
+          VERSION="${GITHUB_REF_NAME#electron-v}"
+          npm version "$VERSION" --no-git-tag-version
 
       - name: Build and publish Linux
         working-directory: apps/electron

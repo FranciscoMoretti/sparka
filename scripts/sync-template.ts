@@ -157,10 +157,21 @@ async function applyElectronTemplateTransforms(
   builder = builder
     .replace(/^appId: .+$/m, "appId: __APP_ID__")
     .replace(/^productName: .+$/m, "productName: __PRODUCT_NAME__")
+    .replace(/^(copyright: Copyright © \d+ ).+$/m, "$1__PRODUCT_NAME__")
     .replace(/^( {2}owner: ).+$/m, "$1__GITHUB_OWNER__")
     .replace(/^( {2}repo: ).+$/m, "$1__GITHUB_REPO__")
+    .replace(/^( {4}- name: ).+Auth$/gm, "$1__PRODUCT_NAME__ Auth")
     .replace(/- chatjs$/gm, "- __APP_SCHEME__");
   await writeFile(builderPath, builder);
+
+  // package.json: replace hardcoded package name
+  const packageJsonPath = join(destination, "package.json");
+  let packageJson = await readFile(packageJsonPath, "utf8");
+  packageJson = packageJson.replace(
+    /"name": "@chatjs\/electron"/,
+    '"name": "__PROJECT_NAME__-electron"'
+  );
+  await writeFile(packageJsonPath, packageJson);
 }
 
 async function copyElectronTemplate(destination: string): Promise<void> {
