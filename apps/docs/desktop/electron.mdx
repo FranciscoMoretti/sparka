@@ -22,18 +22,18 @@ my-app/
 │   ├── src/
 │   │   ├── main.ts             # Main process: window, tray, deep links, auto-updater
 │   │   ├── preload.ts          # Context bridge (contextIsolation enabled)
-│   │   └── config.ts           # APP_URL, APP_SCHEME, window dimensions
+│   │   └── config.ts           # Reads APP_NAME, APP_SCHEME, APP_URL from chat.config.ts
 │   ├── icon.png                # App icon (512×512 PNG, edit this)
 │   ├── build/
 │   │   ├── icon.png            # Copied from icon.png (generated)
 │   │   └── icon.icns           # macOS icon (generated)
-│   ├── electron-builder.yml    # Build config: appId, productName, targets, protocols
+│   ├── electron-builder.config.js  # Build config: reads branding.json for appId, productName, protocols
 │   ├── entitlements.mac.plist  # macOS hardened runtime entitlements
 │   └── package.json
 └── chat.config.ts
 ```
 
-The CLI also pre-fills `electron-builder.yml` and `src/config.ts` with your project name, app ID, and URL scheme derived from your project name.
+The CLI pre-fills the GitHub `owner` and `repo` in `electron-builder.config.js`. The app name, URL scheme, appId, and production URL all derive automatically from `chat.config.ts`.
 
 ## Development
 
@@ -85,9 +85,15 @@ Your web app already includes the two API routes that support this:
 
 ### Configuring the URL scheme
 
-The `APP_SCHEME` in `electron/src/config.ts` sets the custom protocol (e.g. `myapp`), which produces deep links like `myapp://auth/callback`. It must match the `schemes` entries in `electron-builder.yml`. The CLI sets both automatically from your project name.
+The URL scheme (e.g. `myapp`, which produces deep links like `myapp://auth/callback`) comes from the `appPrefix` field in `chat.config.ts`. Update it there and the change propagates automatically to `src/config.ts` and `electron-builder.config.js` via the prebuild step.
 
-If you rename the scheme later, update it in both files.
+```ts
+// chat.config.ts
+const config = defineConfig({
+  appPrefix: "myapp", // sets the deep link scheme
+  // ...
+});
+```
 
 ## System Tray
 
@@ -99,17 +105,18 @@ Closing the window hides it. Use **Quit** from the tray to fully exit.
 
 The integration uses `electron-updater` with GitHub Releases as the update source. When a packaged app starts, it checks for updates automatically and installs them on next quit.
 
-The `publish` block in `electron-builder.yml` controls the GitHub repository:
+The `publish` block in `electron-builder.config.js` controls the GitHub repository:
 
-```yaml
-publish:
-  provider: github
-  owner: your-github-username
-  repo: your-repo-name
-  releaseType: release
+```js
+publish: {
+  provider: "github",
+  owner: "your-github-username",
+  repo: "your-repo-name",
+  releaseType: "release",
+},
 ```
 
-Updates only run when the app is packaged (`app.isPackaged`). They are skipped in development.
+The CLI pre-fills `owner` and `repo` from your project. Updates only run when the app is packaged (`app.isPackaged`). They are skipped in development.
 
 ## Customization
 
@@ -124,25 +131,23 @@ npm run generate-icons
 
 This produces `build/icon.png` and `build/icon.icns` (macOS).
 
-### App name and ID
+### App name, scheme, and production URL
 
-Edit `electron/electron-builder.yml`:
-
-```yaml
-productName: My App          # Display name shown in the OS
-appId: com.yourcompany.myapp # Reverse-DNS bundle identifier
-```
-
-### Production URL
-
-Update `APP_URL` in `electron/src/config.ts` with your deployed web app URL:
+All branding values come from `chat.config.ts` in your project root. Edit the relevant fields there:
 
 ```ts
-export const APP_URL =
-  process.env.NODE_ENV === "development"
-    ? "http://localhost:3000"
-    : "https://your-app.vercel.app"; // your production URL
+// chat.config.ts
+const config = defineConfig({
+  appName: "My App",        // display name shown in the OS
+  appPrefix: "myapp",       // URL scheme and appId prefix
+  appUrl: "https://my-app.vercel.app", // production URL loaded by Electron
+  // ...
+});
 ```
+
+Before each build, a prebuild step runs `bun scripts/write-branding.ts`, which reads `chat.config.ts` and writes a `branding.json` file. `electron-builder.config.js` reads `branding.json` at build time to set `productName`, `appId`, protocol schemes, and copyright.
+
+You do not need to edit any files inside `electron/` to change the app name, scheme, or URL.
 
 ## Building for Distribution
 
