@@ -11,12 +11,17 @@ import {
 } from "../helpers/env-checklist";
 import {
 	promptAuth,
+	promptElectron,
 	promptFeatures,
 	promptGateway,
 	promptInstall,
 	promptProjectName,
 } from "../helpers/prompts";
-import { scaffoldFromGit, scaffoldFromTemplate } from "../helpers/scaffold";
+import {
+	scaffoldElectron,
+	scaffoldFromGit,
+	scaffoldFromTemplate,
+} from "../helpers/scaffold";
 import { inferPackageManager } from "../utils/get-package-manager";
 import { handleError } from "../utils/handle-error";
 import { highlighter } from "../utils/highlighter";
@@ -104,7 +109,10 @@ export const create = new Command()
 			// 5. Auth providers
 			const auth = await promptAuth(options.yes);
 
-			// 6. Scaffold project
+			// 6. Electron
+			const withElectron = await promptElectron(options.yes);
+
+			// 8. Scaffold project
 			logger.break();
 			const scaffoldSpinner = spinner("Scaffolding project...").start();
 			try {
@@ -112,6 +120,14 @@ export const create = new Command()
 					await scaffoldFromGit(options.fromGit, targetDir);
 				} else {
 					await scaffoldFromTemplate(targetDir);
+				}
+				if (withElectron) {
+					await scaffoldElectron(targetDir, {
+						appName,
+						appUrl,
+						projectName,
+						appScheme: appPrefix,
+					});
 				}
 				scaffoldSpinner.succeed("Project scaffolded.");
 			} catch (error) {
@@ -193,6 +209,13 @@ export const create = new Command()
 				);
 				logger.log(
 					`  ${highlighter.dim("4.")} ${highlighter.info(`${packageManager} run dev`)}`,
+				);
+			}
+			if (withElectron) {
+				logger.break();
+				logger.info("Electron desktop app:");
+				logger.log(
+					`  Run the web app first, then: ${highlighter.info(`cd electron && bun install && bun run dev`)}`,
 				);
 			}
 			logger.break();

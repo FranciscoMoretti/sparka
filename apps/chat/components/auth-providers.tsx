@@ -1,6 +1,7 @@
 "use client";
 
 import { Github } from "lucide-react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import authClient from "@/lib/auth-client";
 import { config } from "@/lib/config";
@@ -38,13 +39,53 @@ function VercelIcon({ className }: { className?: string }) {
   );
 }
 
-export function SocialAuthProviders() {
+export function SocialAuthProviders({
+  callbackURL,
+}: {
+  callbackURL?: string;
+} = {}) {
+  // Detect Electron synchronously so there's no flash of the wrong UI.
+  // Defaults to false on the server (SSR); the lazy initializer runs only on
+  // the client where window.electronAPI is already set by the preload script.
+  const [isElectron] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      Boolean(
+        (window as { electronAPI?: { isElectron?: boolean } }).electronAPI
+          ?.isElectron
+      )
+  );
+
+  // In the Electron app, delegate provider selection to the web browser.
+  // window.open() is intercepted by Electron's setWindowOpenHandler and
+  // forwarded to shell.openExternal(), so OAuth state cookies are stored in
+  // the browser (not in Electron's session), preventing state_mismatch errors.
+  if (isElectron) {
+    return (
+      <Button
+        className="w-full"
+        onClick={() => window.open(`${window.location.origin}/electron-auth`)}
+        type="button"
+        variant="outline"
+      >
+        Sign in via browser
+      </Button>
+    );
+  }
+
+  function signIn(provider: "google" | "github" | "vercel") {
+    authClient.signIn.social({
+      provider,
+      ...(callbackURL ? { callbackURL } : {}),
+    });
+  }
+
   return (
     <div className="space-y-2">
       {config.authentication.google ? (
         <Button
           className="w-full"
-          onClick={() => authClient.signIn.social({ provider: "google" })}
+          onClick={() => signIn("google")}
           type="button"
           variant="outline"
         >
@@ -55,7 +96,7 @@ export function SocialAuthProviders() {
       {config.authentication.github ? (
         <Button
           className="w-full"
-          onClick={() => authClient.signIn.social({ provider: "github" })}
+          onClick={() => signIn("github")}
           type="button"
           variant="outline"
         >
@@ -66,7 +107,7 @@ export function SocialAuthProviders() {
       {config.authentication.vercel ? (
         <Button
           className="w-full"
-          onClick={() => authClient.signIn.social({ provider: "vercel" })}
+          onClick={() => signIn("vercel")}
           type="button"
           variant="outline"
         >

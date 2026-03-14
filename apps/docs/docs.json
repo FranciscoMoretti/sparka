@@ -71,6 +71,12 @@
             ]
           },
           {
+            "group": "Desktop",
+            "pages": [
+              "desktop/electron"
+            ]
+          },
+          {
             "group": "CLI",
             "pages": [
               "cli/index",

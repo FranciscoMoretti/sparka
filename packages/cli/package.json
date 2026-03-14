@@ -1,6 +1,6 @@
 {
 	"name": "@chat-js/cli",
-	"version": "0.3.0",
+	"version": "0.4.0",
 	"description": "CLI for creating and extending ChatJS apps",
 	"license": "Apache-2.0",
 	"repository": {

@@ -26,6 +26,7 @@ function isPublicPage(pathname: string): boolean {
   return (
     pathname.startsWith("/models") ||
     pathname.startsWith("/compare") ||
+    pathname.startsWith("/electron-auth") ||
     pathname.startsWith("/share/") ||
     pathname.startsWith("/privacy") ||
     pathname.startsWith("/terms")

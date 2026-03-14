@@ -7,6 +7,7 @@ import Script from "next/script";
 import "./globals.css";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Toaster } from "sonner";
+import { ElectronTitlebarOffset } from "@/components/electron-titlebar-offset";
 import { ThemeProvider } from "@/components/theme-provider";
 import { config } from "@/lib/config";
 
@@ -85,7 +86,12 @@ export default async function RootLayout({
           />
         ) : null}
       </head>
-      <body className="antialiased">
+      <body
+        className="antialiased"
+        style={{ paddingTop: "var(--electron-titlebar-height, 0px)" }}
+        suppressHydrationWarning
+      >
+        <ElectronTitlebarOffset />
         <Script
           src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"
           strategy="afterInteractive"

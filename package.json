@@ -27,7 +27,10 @@
 		"db:generate": "dotenv -e .env.local -- bun --filter=@chatjs/chat run db:generate",
 		"db:migrate": "dotenv -e .env.local -- bun --filter=@chatjs/chat run db:migrate",
 		"start:chat": "dotenv -e .env.local -- bun --filter=@chatjs/chat run start",
-		"release": "changeset publish"
+		"release": "changeset publish",
+		"dev:electron": "turbo run electron:dev --filter=@chatjs/electron",
+		"build:electron": "turbo run electron:build --filter=@chatjs/electron",
+		"dist:electron": "turbo run electron:publish --filter=@chatjs/electron"
 	},
 	"overrides": {
 		"@lobehub/ui": "~2.24.3"

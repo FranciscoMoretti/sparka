@@ -1,0 +1,29 @@
+{
+  "name": "@chatjs/electron",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "generate-icons": "bash scripts/generate-icons.sh",
+    "prebuild": "bun scripts/write-branding.ts && bun run generate-icons",
+    "build": "bun build src/main.ts --target=node --format=cjs --outfile dist/main.js --external electron --external electron-updater && bun build src/preload.ts --target=browser --format=cjs --outfile dist/preload.js --external electron",
+    "dev": "bun run build && electron .",
+    "package": "bun run build && electron-builder --dir",
+    "dist:mac": "bun run build && electron-builder --mac",
+    "dist:win": "bun run build && electron-builder --win",
+    "dist:linux": "bun run build && electron-builder --linux",
+    "publish": "bun run build && electron-builder --publish=always",
+    "electron:build": "bun run build",
+    "electron:dev": "bun run dev",
+    "electron:publish": "bun run publish"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "@types/node": "^22.8.6",
+    "electron": "^36.0.0",
+    "electron-builder": "^25.1.8",
+    "typescript": "5.8.3"
+  }
+}
