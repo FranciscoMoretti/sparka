@@ -2,7 +2,8 @@
 // This file is fully managed by the CLI — do not edit manually.
 
 // [chatjs-registry:imports]
-import { WordCountRenderer, wordCount } from "@/tools/word-count";
+import { WordCountRenderer } from "@/tools/word-count";
+import { wordCount } from "@/tools/word-count.tool";
 // [/chatjs-registry:imports]
 
 export const tools = {

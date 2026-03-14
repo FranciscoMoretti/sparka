@@ -38,7 +38,6 @@ async function executeAgentAndGetOutput({
   selectedModelId,
   explicitlyRequestedTools,
   userId,
-  activeTools,
   abortSignal,
   messageId,
 }: {
@@ -47,7 +46,6 @@ async function executeAgentAndGetOutput({
   selectedModelId: AppModelId;
   explicitlyRequestedTools: ToolName[] | null;
   userId: string | null;
-  activeTools: ToolName[];
   abortSignal: AbortSignal | undefined;
   messageId: string;
 }): Promise<{
@@ -69,7 +67,6 @@ async function executeAgentAndGetOutput({
     selectedModelId,
     explicitlyRequestedTools,
     userId,
-    budgetAllowedTools: activeTools,
     abortSignal,
     messageId,
     dataStream: noOpStreamWriter,
@@ -254,7 +251,7 @@ export async function runCoreChatAgentEval({
 }): Promise<EvalAgentResult> {
   const messageId = generateUUID();
   const explicitlyRequestedTools =
-    determineExplicitlyRequestedTools(selectedTool);
+    determineExplicitlyRequestedTools(selectedTool) ?? activeTools;
 
   const { result, contextForLLM, output, response } =
     await executeAgentAndGetOutput({
@@ -263,7 +260,6 @@ export async function runCoreChatAgentEval({
       selectedModelId,
       explicitlyRequestedTools,
       userId,
-      activeTools,
       abortSignal,
       messageId,
     });

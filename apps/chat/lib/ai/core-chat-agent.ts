@@ -9,6 +9,7 @@ import { getMcpTools, getTools } from "@/lib/ai/tools/tools";
 import type { ChatMessage, StreamWriter, ToolName } from "@/lib/ai/types";
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
 import type { McpConnector } from "@/lib/db/schema";
+import { ANONYMOUS_LIMITS } from "@/lib/types/anonymous";
 import { replaceFilePartUrlByBinaryDataInMessages } from "@/lib/utils/download-assets";
 
 export async function createCoreChatAgent({
@@ -18,7 +19,6 @@ export async function createCoreChatAgent({
   selectedModelId,
   explicitlyRequestedTools,
   userId,
-  budgetAllowedTools,
   abortSignal,
   messageId,
   dataStream,
@@ -33,8 +33,6 @@ export async function createCoreChatAgent({
   selectedModelId: AppModelId;
   explicitlyRequestedTools: ToolName[] | null;
   userId: string | null;
-  /** Budget-allowed base tools from route.ts (static ToolNames only) */
-  budgetAllowedTools: ToolName[];
   abortSignal?: AbortSignal;
   messageId: string;
   dataStream: StreamWriter;
@@ -90,16 +88,23 @@ export async function createCoreChatAgent({
     ...mcpTools,
   };
 
-  // Compute final activeTools for streamText:
-  // 1. Filter budget-allowed base tools to only those that actually exist in baseTools
-  const existingBaseActiveTools = budgetAllowedTools.filter(
-    (toolName) => toolName in baseTools
-  );
-  // 2. Always allow all MCP tools that exist at runtime
-  const mcpToolNames = Object.keys(mcpTools);
-  // 3. Build the final activeTools list (cast needed because MCP tools are dynamic)
+  // Compute final activeTools for streamText
+  const isAnonymous = userId === null;
+  let activeBaseTools = Object.keys(baseTools) as ToolName[];
+  if (!modelDefinition?.input) {
+    activeBaseTools = [];
+  } else if (isAnonymous) {
+    activeBaseTools = activeBaseTools.filter((k) =>
+      (ANONYMOUS_LIMITS.AVAILABLE_TOOLS as ToolName[]).includes(k)
+    );
+  }
+  if (explicitlyRequestedTools && explicitlyRequestedTools.length > 0) {
+    activeBaseTools = explicitlyRequestedTools.filter((k) =>
+      activeBaseTools.includes(k)
+    );
+  }
   const activeTools = [
-    ...new Set([...existingBaseActiveTools, ...mcpToolNames]),
+    ...new Set([...activeBaseTools, ...Object.keys(mcpTools)]),
   ] as (keyof typeof allTools)[];
 
   // Resolve async model config before streamText to ensure cleanup on failure

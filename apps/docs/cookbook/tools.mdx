@@ -34,7 +34,7 @@ A tool ships three files. The CLI copies two of them and injects entries for all
 
 | File | What it contains |
 |------|-----------------|
-| `tools/{name}.ts` | Backend tool: schema + `execute` function |
+| `tools/{name}.tool.ts` | Backend tool: schema + `execute` function |
 | `tools/{name}.tsx` | Frontend renderer component |
 | `tools/index.ts` | Registry index -- CLI injects imports and entries here |
 
@@ -42,7 +42,7 @@ A tool ships three files. The CLI copies two of them and injects entries for all
 
 ### 1. Backend tool
 
-```ts title="tools/word-count.ts"
+```ts title="tools/word-count.tool.ts"
 import { tool } from "ai";
 import { z } from "zod";
 
@@ -62,22 +62,30 @@ export const wordCount = tool({
     return { words, characters, charactersNoSpaces, sentences };
   },
 });
+
+export type WordCountOutput = {
+  words: number;
+  characters: number;
+  charactersNoSpaces: number;
+  sentences: number;
+};
 ```
 
 ### 2. Frontend renderer
 
-The renderer receives `ToolRendererProps`. Use `Extract` to narrow the union to your specific tool type and get typed `input` and `output`.
+The renderer imports `WordCountOutput` from the tool file and defines a local `WordCountPart` type. This avoids the circular import that would arise from importing through `@/lib/ai/types` (which depends on the tools registry).
 
 ```tsx title="tools/word-count.tsx"
 "use client";
 
-import type { ToolUIPart } from "ai";
-import type { ToolRendererProps } from "@/lib/ai/tool-renderer-registry";
-import type { ChatTools } from "@/lib/ai/types";
+import type { WordCountOutput } from "./word-count.tool";
 
-type WordCountPart = Extract<ToolUIPart<ChatTools>, { type: "tool-wordCount" }>;
+// Typed locally to avoid circular imports (tools/ ← lib/ai/types ← installed-tools ← tools/)
+type WordCountPart =
+  | { state: "input-available" | "input-streaming"; output?: never }
+  | { state: "output-available"; output: WordCountOutput };
 
-export function WordCountRenderer({ tool }: ToolRendererProps) {
+export function WordCountRenderer({ tool }: { tool: unknown }) {
   const part = tool as WordCountPart;
 
   if (part.state === "input-available") {
@@ -96,22 +104,19 @@ export function WordCountRenderer({ tool }: ToolRendererProps) {
 
   return (
     <div className="grid grid-cols-2 gap-2 rounded-lg border p-3 text-sm sm:grid-cols-4">
-      <div className="flex flex-col items-center gap-1">
-        <span className="font-semibold text-lg">{words}</span>
-        <span className="text-muted-foreground text-xs">Words</span>
-      </div>
-      <div className="flex flex-col items-center gap-1">
-        <span className="font-semibold text-lg">{characters}</span>
-        <span className="text-muted-foreground text-xs">Characters</span>
-      </div>
-      <div className="flex flex-col items-center gap-1">
-        <span className="font-semibold text-lg">{charactersNoSpaces}</span>
-        <span className="text-muted-foreground text-xs">No spaces</span>
-      </div>
-      <div className="flex flex-col items-center gap-1">
-        <span className="font-semibold text-lg">{sentences}</span>
-        <span className="text-muted-foreground text-xs">Sentences</span>
-      </div>
+      <Stat label="Words" value={words} />
+      <Stat label="Characters" value={characters} />
+      <Stat label="No spaces" value={charactersNoSpaces} />
+      <Stat label="Sentences" value={sentences} />
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className="font-semibold text-lg">{value}</span>
+      <span className="text-muted-foreground text-xs">{label}</span>
     </div>
   );
 }
@@ -124,7 +129,7 @@ The CLI appends one import and one entry per tool to each of the three managed b
 ```ts title="tools/index.ts"
 // [chatjs-registry:imports]
 import { WordCountRenderer } from "@/tools/word-count";
-import { wordCount } from "@/tools/word-count";
+import { wordCount } from "@/tools/word-count.tool";
 // [/chatjs-registry:imports]
 
 export const tools = {
@@ -148,7 +153,7 @@ export const ui = {
 tools (as const) → InstalledTools → ChatTools & InstalledTools → ToolUIPart<ChatTools>
 ```
 
-This means `part.output` inside your renderer is fully typed -- no `unknown`, no manual casts beyond the initial `Extract` narrowing.
+Renderers receive `{ tool: unknown }` and cast to a locally defined type. The local type is built from the exported `WordCountOutput` type in the `.tool.ts` file, keeping the renderer isolated from the `@/lib/ai/types` import chain (which would cause a circular dependency via `installed-tools → tools/index`). The `output` field is fully typed — no `unknown` beyond the initial cast.
 
 ## Path configuration
 
@@ -172,7 +177,7 @@ When you publish a tool to a registry, the manifest tells the CLI which files to
 {
   "name": "word-count",
   "files": [
-    { "type": "tool",     "path": "word-count.ts"  },
+    { "type": "tool",     "path": "word-count.tool.ts"  },
     { "type": "renderer", "path": "word-count.tsx" }
   ],
   "registry": {
