@@ -13,7 +13,12 @@ import React, {
 } from "react";
 import type { LexicalChatInputRef } from "@/components/lexical-chat-input";
 import type { AppModelId } from "@/lib/ai/app-models";
-import type { Attachment, UiToolName } from "@/lib/ai/types";
+import {
+  getPrimarySelectedModelId,
+  type Attachment,
+  type SelectedModelValue,
+  type UiToolName,
+} from "@/lib/ai/types";
 import { useChatModels } from "./chat-models-provider";
 import { useDefaultModel, useModelChange } from "./default-model-provider";
 
@@ -24,10 +29,12 @@ interface ChatInputContextType {
   getInputValue: () => string;
   handleInputChange: (value: string) => void;
   handleModelChange: (modelId: AppModelId) => Promise<void>;
+  handleModelSelectionChange: (selection: SelectedModelValue) => Promise<void>;
   handleSubmit: (submitFn: () => void, isEditMode?: boolean) => void;
   isEmpty: boolean;
   isProjectContext: boolean;
   selectedModelId: AppModelId;
+  selectedModelSelection: SelectedModelValue;
   selectedTool: UiToolName | null;
   setAttachments: Dispatch<SetStateAction<Attachment[]>>;
   setSelectedTool: Dispatch<SetStateAction<UiToolName | null>>;
@@ -95,6 +102,8 @@ export function ChatInputProvider({
   const [selectedModelId, setSelectedModelId] = useState<AppModelId>(
     overrideModelId || defaultModel
   );
+  const [selectedModelSelection, setSelectedModelSelection] =
+    useState<SelectedModelValue>(overrideModelId || defaultModel);
 
   // IMPORTANT: do not read localStorage during initial render.
   // Next SSRs client components; localStorage is client-only and will cause hydration mismatches
@@ -128,7 +137,7 @@ export function ChatInputProvider({
 
   const { getModelById } = useChatModels();
 
-  const handleModelChange = useCallback(
+  const persistPrimaryModelChange = useCallback(
     async (modelId: AppModelId) => {
       const modelDef = getModelById(modelId);
 
@@ -144,6 +153,29 @@ export function ChatInputProvider({
       await changeModel(modelId);
     },
     [selectedTool, changeModel, getModelById]
+  );
+
+  const handleModelChange = useCallback(
+    async (modelId: AppModelId) => {
+      setSelectedModelSelection(modelId);
+      await persistPrimaryModelChange(modelId);
+    },
+    [persistPrimaryModelChange]
+  );
+
+  const handleModelSelectionChange = useCallback(
+    async (selection: SelectedModelValue) => {
+      setSelectedModelSelection(selection);
+
+      const primaryModelId = getPrimarySelectedModelId(selection);
+
+      if (!primaryModelId) {
+        return;
+      }
+
+      await persistPrimaryModelChange(primaryModelId);
+    },
+    [persistPrimaryModelChange]
   );
 
   const clearInput = useCallback(() => {
@@ -207,7 +239,9 @@ export function ChatInputProvider({
         attachments,
         setAttachments,
         selectedModelId,
+        selectedModelSelection,
         handleModelChange,
+        handleModelSelectionChange,
         getInputValue,
         handleInputChange,
         getInitialInput,

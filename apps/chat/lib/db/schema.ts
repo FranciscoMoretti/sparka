@@ -113,8 +113,11 @@ export const message = pgTable("Message", {
   attachments: json("attachments").notNull(),
   createdAt: timestamp("createdAt").notNull(),
   annotations: json("annotations"),
-  selectedModel: varchar("selectedModel", { length: 256 }).default(""),
+  selectedModel: json("selectedModel"),
   selectedTool: varchar("selectedTool", { length: 256 }).default(""),
+  parallelGroupId: uuid("parallelGroupId"),
+  parallelIndex: integer("parallelIndex"),
+  isPrimaryParallel: boolean("isPrimaryParallel"),
   lastContext: json("lastContext"),
   activeStreamId: varchar("activeStreamId", { length: 64 }),
   /** Timestamp when this message's stream was canceled by the user. Null means not canceled. */

@@ -2,7 +2,10 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { memo } from "react";
 import { Action } from "@/components/ai-elements/actions";
 import { useNavigateToSibling } from "@/hooks/use-navigate-to-sibling";
-import { useMessageSiblingInfo } from "@/lib/stores/hooks-threads";
+import {
+  useMessageSiblingInfo,
+  useParallelGroupInfo,
+} from "@/lib/stores/hooks-threads";
 import { useSession } from "@/providers/session-provider";
 
 function PureMessageSiblings({
@@ -16,8 +19,13 @@ function PureMessageSiblings({
   const _isAuthenticated = !!session?.user;
 
   const siblingInfo = useMessageSiblingInfo(messageId);
+  const parallelGroupInfo = useParallelGroupInfo(messageId);
   const navigateToSibling = useNavigateToSibling();
   const hasSiblings = siblingInfo && siblingInfo.siblings.length > 1;
+
+  if (parallelGroupInfo) {
+    return null;
+  }
 
   return (
     <div className="flex items-center justify-center gap-1">

@@ -59,10 +59,79 @@ const frontendToolsSchema = z.enum([
 const __ = frontendToolsSchema.options satisfies ToolNameInternal[];
 
 export type UiToolName = z.infer<typeof frontendToolsSchema>;
+
+export type SelectedModelCounts = Partial<Record<AppModelId, number>>;
+export type SelectedModelValue = AppModelId | SelectedModelCounts;
+
+export function isSelectedModelCounts(
+  value: unknown
+): value is SelectedModelCounts {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  return Object.entries(value).every(
+    ([modelId, count]) =>
+      typeof modelId === "string" &&
+      typeof count === "number" &&
+      Number.isInteger(count) &&
+      count > 0
+  );
+}
+
+export function isSelectedModelValue(
+  value: unknown
+): value is SelectedModelValue {
+  return typeof value === "string" || isSelectedModelCounts(value);
+}
+
+export function getPrimarySelectedModelId(
+  selectedModel: SelectedModelValue | null | undefined
+): AppModelId | null {
+  if (!selectedModel) {
+    return null;
+  }
+
+  if (typeof selectedModel === "string") {
+    return selectedModel;
+  }
+
+  const [firstSelectedModelId] = Object.entries(selectedModel).find(
+    ([, count]) => typeof count === "number" && count > 0
+  ) ?? [null];
+
+  return firstSelectedModelId as AppModelId | null;
+}
+
+export function expandSelectedModelValue(
+  selectedModel: SelectedModelValue
+): AppModelId[] {
+  if (typeof selectedModel === "string") {
+    return [selectedModel];
+  }
+
+  const expanded: AppModelId[] = [];
+
+  for (const [modelId, count] of Object.entries(selectedModel)) {
+    if (!(typeof count === "number" && Number.isInteger(count) && count > 0)) {
+      continue;
+    }
+
+    for (let index = 0; index < count; index += 1) {
+      expanded.push(modelId as AppModelId);
+    }
+  }
+
+  return expanded;
+}
+
 const messageMetadataSchema = z.object({
   createdAt: z.date(),
   parentMessageId: z.string().nullable(),
-  selectedModel: z.custom<AppModelId>((val) => typeof val === "string"),
+  parallelGroupId: z.string().nullable().optional(),
+  parallelIndex: z.number().int().nullable().optional(),
+  isPrimaryParallel: z.boolean().nullable().optional(),
+  selectedModel: z.custom<SelectedModelValue>(isSelectedModelValue),
   activeStreamId: z.string().nullable(),
   selectedTool: frontendToolsSchema.optional(),
   usage: z.custom<LanguageModelUsage | undefined>((_val) => true).optional(),
@@ -101,7 +170,6 @@ type webSearchTool = InferUITool<ReturnType<typeof tavilyWebSearch>>;
 type codeExecutionTool = InferUITool<ReturnType<typeof codeExecution>>;
 type retrieveUrlTool = InferUITool<typeof retrieveUrl>;
 
-// biome-ignore lint/style/useConsistentTypeDefinitions: using type for mapped type compatibility
 export type ChatTools = {
   codeExecution: codeExecutionTool;
   createCodeDocument: createCodeDocumentToolType;
@@ -123,7 +191,6 @@ interface FollowupSuggestions {
   suggestions: string[];
 }
 
-// biome-ignore lint/style/useConsistentTypeDefinitions: using type for mapped type compatibility
 export type CustomUIDataTypes = {
   appendMessage: string;
   chatConfirmed: {
