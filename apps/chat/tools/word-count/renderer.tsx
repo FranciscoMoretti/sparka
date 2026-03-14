@@ -1,6 +1,6 @@
 "use client";
 
-import type { WordCountOutput } from "./word-count.tool";
+import type { WordCountOutput } from "./tool";
 
 // Typed locally to avoid circular imports (tools/ ← lib/ai/types ← installed-tools ← tools/)
 type WordCountPart =

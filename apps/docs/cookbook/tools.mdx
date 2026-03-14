@@ -30,19 +30,19 @@ flowchart TD
 
 ## File structure
 
-A tool ships three files. The CLI copies two of them and injects entries for all three into the registry index.
+Each tool lives in its own folder. The CLI copies two files and injects entries for all three into the registry index.
 
 | File | What it contains |
 |------|-----------------|
-| `tools/{name}.tool.ts` | Backend tool: schema + `execute` function |
-| `tools/{name}.tsx` | Frontend renderer component |
+| `tools/{name}/tool.ts` | Backend tool: schema + `execute` function |
+| `tools/{name}/renderer.tsx` | Frontend renderer component |
 | `tools/index.ts` | Registry index -- CLI injects imports and entries here |
 
 ## Code
 
 ### 1. Backend tool
 
-```ts title="tools/word-count.tool.ts"
+```ts title="tools/word-count/tool.ts"
 import { tool } from "ai";
 import { z } from "zod";
 
@@ -75,10 +75,10 @@ export type WordCountOutput = {
 
 The renderer imports `WordCountOutput` from the tool file and defines a local `WordCountPart` type. This avoids the circular import that would arise from importing through `@/lib/ai/types` (which depends on the tools registry).
 
-```tsx title="tools/word-count.tsx"
+```tsx title="tools/word-count/renderer.tsx"
 "use client";
 
-import type { WordCountOutput } from "./word-count.tool";
+import type { WordCountOutput } from "./tool";
 
 // Typed locally to avoid circular imports (tools/ ← lib/ai/types ← installed-tools ← tools/)
 type WordCountPart =
@@ -128,8 +128,8 @@ The CLI appends one import and one entry per tool to each of the three managed b
 
 ```ts title="tools/index.ts"
 // [chatjs-registry:imports]
-import { WordCountRenderer } from "@/tools/word-count";
-import { wordCount } from "@/tools/word-count.tool";
+import { WordCountRenderer } from "@/tools/word-count/renderer";
+import { wordCount } from "@/tools/word-count/tool";
 // [/chatjs-registry:imports]
 
 export const tools = {
@@ -153,7 +153,7 @@ export const ui = {
 tools (as const) → InstalledTools → ChatTools & InstalledTools → ToolUIPart<ChatTools>
 ```
 
-Renderers receive `{ tool: unknown }` and cast to a locally defined type. The local type is built from the exported `WordCountOutput` type in the `.tool.ts` file, keeping the renderer isolated from the `@/lib/ai/types` import chain (which would cause a circular dependency via `installed-tools → tools/index`). The `output` field is fully typed — no `unknown` beyond the initial cast.
+Renderers receive `{ tool: unknown }` and cast to a locally defined type. The local type is built from the exported `WordCountOutput` type in `tool.ts`, keeping the renderer isolated from the `@/lib/ai/types` import chain (which would cause a circular dependency via `installed-tools → tools/index`). The `output` field is fully typed — no `unknown` beyond the initial cast.
 
 ## Path configuration
 
@@ -177,8 +177,8 @@ When you publish a tool to a registry, the manifest tells the CLI which files to
 {
   "name": "word-count",
   "files": [
-    { "type": "tool",     "path": "word-count.tool.ts"  },
-    { "type": "renderer", "path": "word-count.tsx" }
+    { "type": "tool",     "path": "word-count/tool.ts"     },
+    { "type": "renderer", "path": "word-count/renderer.tsx" }
   ],
   "registry": {
     "toolExport":     "wordCount",
