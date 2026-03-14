@@ -69,3 +69,5 @@ apps/*/evals/db/
 /CLAUDE.md.bak
 # END Skiller Generated Files
 .devtools
+
+.cursor/hooks/state
