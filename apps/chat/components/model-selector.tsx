@@ -223,7 +223,8 @@ const CommandItem = memo(
 		prev.model.id === next.model.id &&
 		prev.disabled === next.disabled &&
 		prev.isSelected === next.isSelected &&
-		prev.count === next.count,
+		prev.count === next.count &&
+		(prev.onCountChange !== undefined) === (next.onCountChange !== undefined),
 );
 
 function PureModelSelector({
@@ -509,10 +510,13 @@ function PureModelSelector({
 			<PopoverContent
 				align="start"
 				className="w-[350px] p-0"
+				onFocusOutside={(e) => e.preventDefault()}
 				onInteractOutside={(e) => {
-					// Prevent closing when interacting with nested filter popover
+					// Prevent closing when interacting with nested popovers rendered in portals
 					if (
-						(e.target as HTMLElement).closest('[data-slot="command-input"]')
+						(e.target as HTMLElement).closest(
+							"[data-radix-popper-content-wrapper]",
+						)
 					) {
 						e.preventDefault();
 					}
