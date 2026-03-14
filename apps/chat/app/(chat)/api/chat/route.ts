@@ -249,7 +249,6 @@ async function handleUserValidationAndCredits({
   return { isNewChat: validationResult.isNewChat };
 }
 
-
 async function getSystemPrompt({
   isAnonymous,
   chatId,

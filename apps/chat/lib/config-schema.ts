@@ -253,7 +253,9 @@ export const pathsConfigSchema = z
   .object({
     tools: z
       .string()
-      .describe("Import alias for the tools registry index and backend tool files")
+      .describe(
+        "Import alias for the tools registry index and backend tool files"
+      )
       .default("@/tools"),
     toolUi: z
       .string()

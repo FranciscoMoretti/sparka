@@ -26,7 +26,6 @@ import type { ToolSession } from "./types";
 
 const log = createModuleLogger("tools:mcp");
 
-
 export function getTools({
   dataStream,
   session,
@@ -102,7 +101,7 @@ export function getTools({
       : {}),
     ...(config.ai.tools.video.enabled
       ? {
-          generateVideo: generateVideoTool({ selectedModel }),
+          generateVideo: generateVideoTool({ selectedModel, costAccumulator }),
         }
       : {}),
     ...installedTools,

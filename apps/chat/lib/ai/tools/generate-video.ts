@@ -4,8 +4,13 @@ import { type AppModelId, getAppModelDefinition } from "@/lib/ai/app-models";
 import { getVideoModel } from "@/lib/ai/providers";
 import { uploadFile } from "@/lib/blob";
 import { config } from "@/lib/config";
+import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
 import { createModuleLogger } from "@/lib/logger";
+
+const COST_CENTS = 50; // Fixed estimate — not yet available from provider API
+
 interface GenerateVideoProps {
+  costAccumulator?: CostAccumulator;
   selectedModel?: string;
 }
 
@@ -51,6 +56,7 @@ async function resolveVideoModel(selectedModel?: string): Promise<string> {
 }
 
 export const generateVideoTool = ({
+  costAccumulator,
   selectedModel,
 }: GenerateVideoProps = {}) =>
   tool({
@@ -118,6 +124,8 @@ export const generateVideoTool = ({
         const ext = resolveVideoExtension(video.mediaType);
         const filename = `generated-video-${timestamp}.${ext}`;
         const uploaded = await uploadFile(filename, buffer);
+
+        costAccumulator?.addAPICost("generateVideo", COST_CENTS);
 
         log.info(
           {

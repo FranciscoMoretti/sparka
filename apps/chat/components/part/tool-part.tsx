@@ -14,9 +14,9 @@ import { Weather } from "./weather";
 import { WebSearch } from "./web-search";
 
 interface ToolPartProps {
-  part: ToolUIPart<ChatTools>;
-  messageId: string;
   isReadonly: boolean;
+  messageId: string;
+  part: ToolUIPart<ChatTools>;
 }
 
 export function ToolPart({ part, messageId, isReadonly }: ToolPartProps) {
@@ -72,7 +72,9 @@ export function ToolPart({ part, messageId, isReadonly }: ToolPartProps) {
   // can narrow to its specific tool type for typed input/output access.
   const Renderer = toolRendererRegistry[type];
   if (Renderer) {
-    return <Renderer isReadonly={isReadonly} messageId={messageId} tool={part} />;
+    return (
+      <Renderer isReadonly={isReadonly} messageId={messageId} tool={part} />
+    );
   }
 
   return null;
