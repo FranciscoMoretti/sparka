@@ -9,7 +9,7 @@ import {
   Tray,
 } from "electron";
 import { autoUpdater } from "electron-updater";
-import { APP_SCHEME, APP_URL, TITLEBAR_HEIGHT, WINDOW_DEFAULTS } from "./config";
+import { APP_NAME, APP_SCHEME, APP_URL, TITLEBAR_HEIGHT, WINDOW_DEFAULTS } from "./config";
 
 // Register the custom protocol as a handler for OAuth deep-link callbacks.
 // Must be called before app is ready.
@@ -155,7 +155,7 @@ function createTray(): Tray {
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: "Show ChatJS",
+      label: `Show ${APP_NAME}`,
       click: () => {
         mainWindow?.show();
         mainWindow?.focus();
@@ -171,7 +171,7 @@ function createTray(): Tray {
     },
   ]);
 
-  t.setToolTip("ChatJS");
+  t.setToolTip(APP_NAME);
   t.setContextMenu(contextMenu);
 
   t.on("click", () => {

@@ -65,6 +65,7 @@ apps/*/evals/db/
 # Electron
 apps/electron/dist/
 apps/electron/release/
+apps/electron/branding.json
 
 /.skillz
 /AGENTS.md

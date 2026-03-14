@@ -5,7 +5,7 @@
   "main": "dist/main.js",
   "scripts": {
     "generate-icons": "bash scripts/generate-icons.sh",
-    "prebuild": "bun run generate-icons",
+    "prebuild": "bun scripts/write-branding.ts && bun run generate-icons",
     "build": "bun build src/main.ts --target=node --format=cjs --outfile dist/main.js --external electron --external electron-updater && bun build src/preload.ts --target=browser --format=cjs --outfile dist/preload.js --external electron",
     "dev": "bun run build && electron .",
     "package": "bun run build && electron-builder --dir",
