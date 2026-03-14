@@ -28,6 +28,9 @@ export async function scaffoldElectron(
   projectDir: string,
   opts: { appName: string; appUrl: string; projectName: string; appScheme: string }
 ): Promise<void> {
+  // URI schemes must start with a letter; project names can start with digits.
+  const appScheme = opts.appScheme.replace(/^[^a-zA-Z]+/, "app-$&");
+
   const templateDir = findTemplateDir("electron");
   const destination = join(projectDir, "electron");
   await cp(templateDir, destination, { recursive: true });
@@ -36,7 +39,7 @@ export async function scaffoldElectron(
   const configPath = join(destination, "src", "config.ts");
   const config = (await readFile(configPath, "utf8"))
     .replace("__APP_URL__", opts.appUrl)
-    .replace("__APP_SCHEME__", opts.appScheme);
+    .replace("__APP_SCHEME__", appScheme);
   await writeFile(configPath, config);
 
   // Inject electron-builder.yml placeholders
@@ -47,7 +50,7 @@ export async function scaffoldElectron(
     .replace("__PRODUCT_NAME__", opts.appName)
     .replace("__GITHUB_OWNER__", "your-github-username")
     .replace("__GITHUB_REPO__", opts.projectName)
-    .replaceAll("__APP_SCHEME__", opts.appScheme);
+    .replaceAll("__APP_SCHEME__", appScheme);
   await writeFile(builderPath, builder);
 }
 

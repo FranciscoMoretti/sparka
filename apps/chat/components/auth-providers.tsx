@@ -44,7 +44,7 @@ export function SocialAuthProviders({
 }: {
   callbackURL?: string;
 } = {}) {
-  const [isElectron, setIsElectron] = useState(false);
+  const [isElectron, setIsElectron] = useState<boolean | null>(null);
 
   useEffect(() => {
     setIsElectron(
@@ -54,6 +54,12 @@ export function SocialAuthProviders({
       )
     );
   }, []);
+
+  // Render nothing until Electron detection completes to avoid briefly
+  // showing the web OAuth buttons inside the Electron app.
+  if (isElectron === null) {
+    return null;
+  }
 
   // In the Electron app, delegate provider selection to the web browser.
   // window.open() is intercepted by Electron's setWindowOpenHandler and
