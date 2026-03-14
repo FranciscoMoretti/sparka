@@ -79,6 +79,7 @@ const ELECTRON_EXCLUDED_FILES = new Set([
   ".DS_Store",
   "bun.lock",
   "bun.lockb",
+  "branding.json",
 ]);
 
 function shouldCopyElectronFilePath(filePath: string): boolean {
@@ -143,25 +144,18 @@ async function applyTemplateTransforms(destination: string): Promise<void> {
 async function applyElectronTemplateTransforms(
   destination: string
 ): Promise<void> {
-  // config.ts: replace hardcoded production URL and scheme with placeholders
-  const configPath = join(destination, "src", "config.ts");
-  let config = await readFile(configPath, "utf8");
-  config = config
-    .replace(/"https:\/\/chatjs\.dev"/, '"__APP_URL__"')
-    .replace(/"chatjs"/, '"__APP_SCHEME__"');
-  await writeFile(configPath, config);
+  // tsconfig.json: rewrite monorepo-specific @/ alias to single-app path
+  const tsconfigPath = join(destination, "tsconfig.json");
+  let tsconfig = await readFile(tsconfigPath, "utf8");
+  tsconfig = tsconfig.replace(/"\.\.\/chat\/\*"/, '"../*"');
+  await writeFile(tsconfigPath, tsconfig);
 
-  // electron-builder.yml: replace hardcoded app identity, publish config, and protocol scheme
-  const builderPath = join(destination, "electron-builder.yml");
+  // electron-builder.config.js: replace hardcoded publish config with placeholders
+  const builderPath = join(destination, "electron-builder.config.js");
   let builder = await readFile(builderPath, "utf8");
   builder = builder
-    .replace(/^appId: .+$/m, "appId: __APP_ID__")
-    .replace(/^productName: .+$/m, "productName: __PRODUCT_NAME__")
-    .replace(/^(copyright: Copyright © \d+ ).+$/m, "$1__PRODUCT_NAME__")
-    .replace(/^( {2}owner: ).+$/m, "$1__GITHUB_OWNER__")
-    .replace(/^( {2}repo: ).+$/m, "$1__GITHUB_REPO__")
-    .replace(/^( {4}- name: ).+Auth$/gm, "$1__PRODUCT_NAME__ Auth")
-    .replace(/- chatjs$/gm, "- __APP_SCHEME__");
+    .replace(/owner: "FranciscoMoretti"/, 'owner: "__GITHUB_OWNER__"')
+    .replace(/repo: "chat-js"/, 'repo: "__GITHUB_REPO__"');
   await writeFile(builderPath, builder);
 
   // package.json: replace hardcoded package name
