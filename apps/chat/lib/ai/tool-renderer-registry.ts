@@ -1,7 +1,7 @@
 import type { ToolUIPart } from "ai";
 import type { ComponentType } from "react";
-import { ui } from "@/lib/ai/tools";
 import type { ChatTools } from "@/lib/ai/types";
+import { ui } from "@/tools";
 
 // The props every tool renderer receives.
 // `tool` is the full ChatTools union — narrow it inside the renderer using

@@ -73,6 +73,11 @@ export const toolsDefinitions: Record<ToolName, ToolDefinition> = {
     description: "Research a topic",
     cost: 0, // LLM calls tracked via usage, Tavily calls counted separately
   },
+  wordCount: {
+    name: "wordCount",
+    description: "Count the words, characters, and sentences in a given text",
+    cost: 0, // internal
+  },
 };
 
 export const allTools = toolNameSchema.options;

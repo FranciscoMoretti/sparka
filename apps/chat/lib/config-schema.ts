@@ -254,13 +254,13 @@ export const pathsConfigSchema = z
     tools: z
       .string()
       .describe("Import alias for the tools registry index and backend tool files")
-      .default("@/lib/ai/tools"),
+      .default("@/tools"),
     toolUi: z
       .string()
       .describe("Import alias for frontend tool renderer files")
-      .default("@/components/part/tools"),
+      .default("@/tools"),
   })
-  .default({ tools: "@/lib/ai/tools", toolUi: "@/components/part/tools" });
+  .default({ tools: "@/tools", toolUi: "@/tools" });
 
 export const configSchema = z.object({
   appPrefix: z.string().default("chatjs"),

@@ -1,5 +1,5 @@
 import type { InferUITool } from "ai";
-import { tools } from "./tools";
+import { tools } from "@/tools";
 
 export const installedTools = tools;
 
