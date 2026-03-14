@@ -98,7 +98,7 @@ function PureParallelResponseCards({
   }
 
   return (
-    <div className="mt-3 flex flex-wrap gap-2">
+    <div className="mt-3 flex flex-wrap justify-end gap-2">
       {sortedCardSlots.map((slot) => {
         const modelId =
           slot.message?.metadata.selectedModel
