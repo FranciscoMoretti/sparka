@@ -4,7 +4,7 @@ import z from "zod";
 import type { CostAccumulator } from "@/lib/credits/cost-accumulator";
 import { env } from "@/lib/env";
 import { createModuleLogger } from "@/lib/logger";
-import { toolsDefinitions } from "./tools-definitions";
+const COST_CENTS = 5; // Vercel Sandbox execution
 
 const WHITESPACE_REGEX = /\s+/;
 const PACKAGE_SPEC_SPLIT_RE = /[=<>![\s]/;
@@ -444,10 +444,7 @@ Output rules:
           requestId,
         });
 
-        costAccumulator?.addAPICost(
-          "codeExecution",
-          toolsDefinitions.codeExecution.cost
-        );
+        costAccumulator?.addAPICost("codeExecution", COST_CENTS);
 
         return result;
       } catch (err) {

@@ -7,7 +7,7 @@ import {
   type MultiQuerySearchOptions,
   multiQueryWebSearchStep,
 } from "./steps/multi-query-web-search";
-import { toolsDefinitions } from "./tools-definitions";
+const COST_CENTS = 5; // Tavily API
 
 const DEFAULT_MAX_RESULTS = 5;
 
@@ -184,7 +184,7 @@ Avoid:
       });
 
       // Report API cost
-      costAccumulator?.addAPICost("webSearch", toolsDefinitions.webSearch.cost);
+      costAccumulator?.addAPICost("webSearch", COST_CENTS);
 
       return result;
     },
@@ -245,7 +245,7 @@ Avoid:
       });
 
       // Report API cost
-      costAccumulator?.addAPICost("webSearch", toolsDefinitions.webSearch.cost);
+      costAccumulator?.addAPICost("webSearch", COST_CENTS);
 
       return result;
     },

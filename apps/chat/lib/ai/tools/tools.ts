@@ -102,10 +102,7 @@ export function getTools({
       : {}),
     ...(config.ai.tools.video.enabled
       ? {
-          generateVideo: generateVideoTool({
-            selectedModel,
-            costAccumulator,
-          }),
+          generateVideo: generateVideoTool({ selectedModel }),
         }
       : {}),
     ...installedTools,
