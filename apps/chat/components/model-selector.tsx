@@ -185,7 +185,7 @@ function PureCommandItem({
 							onMouseDown={(e) => e.stopPropagation()}
 						>
 							<button
-								className="flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 font-semibold text-primary text-xs tabular-nums hover:bg-primary/25"
+								className="flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 font-semibold text-foreground text-xs tabular-nums hover:bg-primary/25"
 								type="button"
 							>
 								{count}×
