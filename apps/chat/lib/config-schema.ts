@@ -224,9 +224,14 @@ export const featuresConfigSchema = z
     attachments: z
       .boolean()
       .describe("File attachments (requires BLOB_READ_WRITE_TOKEN)"),
+    parallelResponses: z
+      .boolean()
+      .default(true)
+      .describe("Send one message to multiple models simultaneously"),
   })
   .default({
     attachments: false,
+    parallelResponses: true,
   });
 
 export const authenticationConfigSchema = z

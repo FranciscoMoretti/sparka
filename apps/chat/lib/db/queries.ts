@@ -17,6 +17,7 @@ import type {
   ToolName,
   ToolOutput,
 } from "@/lib/ai/types";
+import { isSelectedModelValue } from "@/lib/ai/types";
 import { createModuleLogger } from "@/lib/logger";
 import { chatMessageToDbMessage } from "@/lib/message-conversion";
 
@@ -73,6 +74,35 @@ export async function saveChat({
       title,
       projectId: projectId ?? null,
     });
+  } catch (error) {
+    console.error("Failed to save chat in database");
+    throw error;
+  }
+}
+
+export async function saveChatIfNotExists({
+  id,
+  userId,
+  title,
+  projectId,
+}: {
+  id: string;
+  userId: string;
+  title: string;
+  projectId?: string;
+}) {
+  try {
+    return await db
+      .insert(chat)
+      .values({
+        id,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userId,
+        title,
+        projectId: projectId ?? null,
+      })
+      .onConflictDoNothing();
   } catch (error) {
     console.error("Failed to save chat in database");
     throw error;
@@ -341,6 +371,43 @@ export async function saveMessage({
   }
 }
 
+export async function saveMessageIfNotExists({
+  id,
+  chatId,
+  message: chatMessage,
+}: {
+  id: string;
+  chatId: string;
+  message: ChatMessage;
+}) {
+  try {
+    return await db.transaction(async (tx) => {
+      const dbMessage = chatMessageToDbMessage(chatMessage, chatId);
+      dbMessage.id = id;
+
+      const insertedMessages = await tx
+        .insert(message)
+        .values(dbMessage)
+        .onConflictDoNothing()
+        .returning({ id: message.id });
+
+      if (insertedMessages.length === 0) {
+        return;
+      }
+
+      const mappedDBParts = mapUIMessagePartsToDBParts(chatMessage.parts, id);
+      if (mappedDBParts.length > 0) {
+        await tx.insert(part).values(mappedDBParts);
+      }
+
+      await updateChatUpdatedAt({ chatId });
+    });
+  } catch (error) {
+    logger.error({ error, chatId, id }, "saveMessageIfNotExists failed");
+    throw error;
+  }
+}
+
 export async function saveChatMessages({
   messages,
 }: {
@@ -413,6 +480,11 @@ export async function updateMessage({
           attachments: dbMessage.attachments,
           createdAt: dbMessage.createdAt,
           parentMessageId: dbMessage.parentMessageId,
+          selectedModel: dbMessage.selectedModel,
+          selectedTool: dbMessage.selectedTool,
+          parallelGroupId: dbMessage.parallelGroupId,
+          parallelIndex: dbMessage.parallelIndex,
+          isPrimaryParallel: dbMessage.isPrimaryParallel,
           lastContext: dbMessage.lastContext,
           activeStreamId: dbMessage.activeStreamId,
         })
@@ -492,8 +564,12 @@ export async function getAllMessagesByChatId({
           createdAt: msg.createdAt,
           activeStreamId: msg.activeStreamId,
           parentMessageId: msg.parentMessageId,
-          selectedModel: (msg.selectedModel ||
-            "") as ChatMessage["metadata"]["selectedModel"],
+          parallelGroupId: msg.parallelGroupId,
+          parallelIndex: msg.parallelIndex,
+          isPrimaryParallel: msg.isPrimaryParallel,
+          selectedModel: isSelectedModelValue(msg.selectedModel)
+            ? msg.selectedModel
+            : ("" as ChatMessage["metadata"]["selectedModel"]),
           selectedTool: (msg.selectedTool ||
             undefined) as ChatMessage["metadata"]["selectedTool"],
           usage: msg.lastContext as ChatMessage["metadata"]["usage"],
@@ -797,8 +873,12 @@ export async function getChatMessageWithPartsById({
           createdAt: dbMessage.createdAt,
           activeStreamId: dbMessage.activeStreamId,
           parentMessageId: dbMessage.parentMessageId,
-          selectedModel: (dbMessage.selectedModel ||
-            "") as ChatMessage["metadata"]["selectedModel"],
+          parallelGroupId: dbMessage.parallelGroupId,
+          parallelIndex: dbMessage.parallelIndex,
+          isPrimaryParallel: dbMessage.isPrimaryParallel,
+          selectedModel: isSelectedModelValue(dbMessage.selectedModel)
+            ? dbMessage.selectedModel
+            : ("" as ChatMessage["metadata"]["selectedModel"]),
           selectedTool: (dbMessage.selectedTool ||
             undefined) as ChatMessage["metadata"]["selectedTool"],
           usage: dbMessage.lastContext as ChatMessage["metadata"]["usage"],

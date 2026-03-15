@@ -7,7 +7,7 @@ import {
   type CustomChatStoreState,
   useCustomChatStoreApi,
 } from "./custom-store-provider";
-import type { MessageSiblingInfo } from "./with-threads";
+import type { MessageSiblingInfo, ParallelGroupInfo } from "./with-threads";
 
 function useThreadStore<T>(
   selector: (store: CustomChatStoreState<ChatMessage>) => T,
@@ -92,6 +92,42 @@ export const useSwitchToSibling = () => {
   return useCallback(
     (messageId: string, direction: "prev" | "next") =>
       store.getState().switchToSibling(messageId, direction),
+    [store]
+  );
+};
+
+export function useParallelGroupInfo(
+  messageId: string
+): ParallelGroupInfo<ChatMessage> | null {
+  return useThreadStore(
+    (state) => state.getParallelGroupInfo(messageId),
+    (a, b) => {
+      if (a === null && b === null) {
+        return true;
+      }
+
+      if (a === null || b === null) {
+        return false;
+      }
+
+      return (
+        a.parallelGroupId === b.parallelGroupId &&
+        a.selectedMessageId === b.selectedMessageId &&
+        a.messages.length === b.messages.length &&
+        a.messages.every(
+          (msg, i) =>
+            msg.id === b.messages[i]?.id &&
+            msg.metadata?.activeStreamId === b.messages[i]?.metadata?.activeStreamId
+        )
+      );
+    }
+  );
+}
+
+export const useSwitchToMessage = () => {
+  const store = useCustomChatStoreApi<ChatMessage>();
+  return useCallback(
+    (messageId: string) => store.getState().switchToMessage(messageId),
     [store]
   );
 };

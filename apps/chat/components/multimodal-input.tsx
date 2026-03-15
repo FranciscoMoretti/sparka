@@ -1,7 +1,7 @@
 "use client";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import { useChatActions, useChatStoreApi } from "@ai-sdk-tools/store";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CameraIcon, FileIcon, ImageIcon, PlusIcon } from "lucide-react";
 import type React from "react";
 import {
@@ -25,17 +25,22 @@ import {
 } from "@/components/ai-elements/prompt-input";
 import { ContextBar } from "@/components/context-bar";
 import { ContextUsageFromParent } from "@/components/context-usage";
-import { useSaveMessageMutation } from "@/hooks/chat-sync-hooks";
 import { useArtifact } from "@/hooks/use-artifact";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { AppModelId } from "@/lib/ai/app-model-id";
-import type { Attachment, ChatMessage, UiToolName } from "@/lib/ai/types";
+import {
+  expandSelectedModelValue,
+  type Attachment,
+  type ChatMessage,
+  type SelectedModelValue,
+  type UiToolName,
+} from "@/lib/ai/types";
 import { config } from "@/lib/config";
 import { processFilesForUpload } from "@/lib/files/upload-prep";
 import { useLastMessageId } from "@/lib/stores/hooks-base";
 import { useAddMessageToTree } from "@/lib/stores/hooks-threads";
 import { ANONYMOUS_LIMITS } from "@/lib/types/anonymous";
-import { cn, generateUUID } from "@/lib/utils";
+import { cn, fetchWithErrorHandlers, generateUUID } from "@/lib/utils";
 import { useChatId } from "@/providers/chat-id-provider";
 import { useChatInput } from "@/providers/chat-input-provider";
 import { useChatModels } from "@/providers/chat-models-provider";
@@ -57,6 +62,16 @@ import { LimitDisplay } from "./upgrade-cta/limit-display";
 import { LoginPrompt } from "./upgrade-cta/login-prompt";
 
 const PROJECT_ROUTE_REGEX = /^\/project\/([^/]+)$/;
+const PROJECT_CHAT_ROUTE_REGEX = /^\/project\/([^/]+)(?:\/chat\/[^/]+)?$/;
+
+interface ParallelRequestSpec {
+  assistantMessageId: string;
+  createdAt: Date;
+  isPrimary: boolean;
+  modelId: AppModelId;
+  parallelGroupId: string;
+  parallelIndex: number;
+}
 
 /** Derive accept string for images only */
 function getAcceptImages(acceptedTypes: Record<string, string[]>): string {
@@ -100,8 +115,8 @@ function PureMultimodalInput({
   const { artifact, closeArtifact } = useArtifact();
   const { data: session } = useSession();
   const trpc = useTRPC();
+  const queryClient = useQueryClient();
   const isMobile = useIsMobile();
-  const { mutate: saveChatMessage } = useSaveMessageMutation();
   const addMessageToTree = useAddMessageToTree();
   useChatId();
   const {
@@ -117,7 +132,9 @@ function PureMultimodalInput({
     attachments,
     setAttachments,
     selectedModelId,
+    selectedModelSelection,
     handleModelChange,
+    handleModelSelectionChange,
     getInputValue,
     handleInputChange,
     getInitialInput,
@@ -135,6 +152,18 @@ function PureMultimodalInput({
   const stopStreamMutation = useMutation(
     trpc.chat.stopStream.mutationOptions()
   );
+  const normalizedSelectedModel = useMemo<SelectedModelValue>(() => {
+    const expanded = expandSelectedModelValue(selectedModelSelection);
+
+    return expanded.length > 1 ? selectedModelSelection : selectedModelId;
+  }, [selectedModelId, selectedModelSelection]);
+  const requestedModelIds = useMemo(
+    () => expandSelectedModelValue(normalizedSelectedModel),
+    [normalizedSelectedModel]
+  );
+  const parallelResponsesEnabled = config.features.parallelResponses;
+  const isParallelModelRequest =
+    parallelResponsesEnabled && requestedModelIds.length > 1;
 
   // Attachment configuration from site config
   const { maxBytes, maxDimension, acceptedTypes } = config.attachments;
@@ -181,6 +210,18 @@ function PureMultimodalInput({
   const submission = useMemo(():
     | { enabled: false; message: string }
     | { enabled: true } => {
+    if (isParallelModelRequest && !session?.user) {
+      return {
+        enabled: false,
+        message: "Log in to use multiple models",
+      };
+    }
+    if (isParallelModelRequest && attachments.length > 0) {
+      return {
+        enabled: false,
+        message: "Multiple models with attachments are not supported yet",
+      };
+    }
     if (isModelDisallowedForAnonymous) {
       return { enabled: false, message: "Log in to use this model" };
     }
@@ -203,7 +244,15 @@ function PureMultimodalInput({
       };
     }
     return { enabled: true };
-  }, [isEmpty, isModelDisallowedForAnonymous, status, uploadQueue.length]);
+  }, [
+    attachments.length,
+    isEmpty,
+    isModelDisallowedForAnonymous,
+    isParallelModelRequest,
+    session?.user,
+    status,
+    uploadQueue.length,
+  ]);
 
   // Helper function to process and validate files
   const processFiles = useCallback(
@@ -275,6 +324,11 @@ function PureMultimodalInput({
     [session?.user]
   );
 
+  const getCurrentProjectId = useCallback(() => {
+    const projectMatch = window.location.pathname.match(PROJECT_CHAT_ROUTE_REGEX);
+    return projectMatch?.[1];
+  }, []);
+
   // Trim messages in edit mode
   const trimMessagesInEditMode = useCallback(
     (parentId: string | null) => {
@@ -319,10 +373,121 @@ function PureMultimodalInput({
     ]
   );
 
+  const invalidatePersistedMessages = useCallback(async () => {
+    await queryClient.invalidateQueries({
+      queryKey: trpc.chat.getChatMessages.queryKey({ chatId }),
+    });
+  }, [chatId, queryClient, trpc]);
+
+  const drainSecondaryParallelRequest = useCallback(
+    async ({
+      message,
+      requestSpec,
+    }: {
+      message: ChatMessage;
+      requestSpec: ParallelRequestSpec;
+    }) => {
+      const response = await fetchWithErrorHandlers("/api/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: chatId,
+          message,
+          prevMessages: [],
+          projectId: getCurrentProjectId(),
+          assistantMessageId: requestSpec.assistantMessageId,
+          selectedModelId: requestSpec.modelId,
+          parallelGroupId: requestSpec.parallelGroupId,
+          parallelIndex: requestSpec.parallelIndex,
+          isPrimaryParallel: false,
+        }),
+      });
+
+      if (!response.body) {
+        return;
+      }
+
+      const reader = response.body.getReader();
+
+      while (true) {
+        const { done } = await reader.read();
+
+        if (done) {
+          break;
+        }
+      }
+    },
+    [chatId, getCurrentProjectId]
+  );
+
+  const runParallelSecondaryRequests = useCallback(
+    async ({
+      message,
+      secondaryRequestSpecs,
+    }: {
+      message: ChatMessage;
+      secondaryRequestSpecs: ParallelRequestSpec[];
+    }) => {
+      await fetchWithErrorHandlers("/api/chat/prepare", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: chatId,
+          message,
+          projectId: getCurrentProjectId(),
+        }),
+      });
+
+      const results = await Promise.allSettled(
+        secondaryRequestSpecs.map((requestSpec) =>
+          drainSecondaryParallelRequest({ message, requestSpec })
+        )
+      );
+
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          return;
+        }
+
+        const failedRequestSpec = secondaryRequestSpecs[index];
+        if (!failedRequestSpec) {
+          return;
+        }
+
+        addMessageToTree({
+          id: failedRequestSpec.assistantMessageId,
+          parts: [],
+          role: "assistant",
+          metadata: {
+            createdAt: failedRequestSpec.createdAt,
+            parentMessageId: message.id,
+            parallelGroupId: failedRequestSpec.parallelGroupId,
+            parallelIndex: failedRequestSpec.parallelIndex,
+            isPrimaryParallel: failedRequestSpec.isPrimary,
+            selectedModel: failedRequestSpec.modelId,
+            activeStreamId: null,
+            selectedTool: undefined,
+          },
+        });
+      });
+
+      await invalidatePersistedMessages();
+    },
+    [
+      addMessageToTree,
+      chatId,
+      drainSecondaryParallelRequest,
+      getCurrentProjectId,
+      invalidatePersistedMessages,
+    ]
+  );
+
   const coreSubmitLogic = useCallback(() => {
     const input = getInputValue();
-
-    updateChatUrl(chatId);
 
     // Get the appropriate parent message ID
     const effectiveParentMessageId = isEditMode
@@ -333,6 +498,21 @@ function PureMultimodalInput({
     if (isEditMode) {
       trimMessagesInEditMode(parentMessageId);
     }
+
+    const isParallelRequest = requestedModelIds.length > 1;
+    const parallelGroupId = isParallelRequest ? generateUUID() : null;
+    const requestSpecs = isParallelRequest
+      ? requestedModelIds.map(
+          (modelId, parallelIndex): ParallelRequestSpec => ({
+            assistantMessageId: generateUUID(),
+            createdAt: new Date(Date.now() + parallelIndex),
+            isPrimary: parallelIndex === 0,
+            modelId,
+            parallelGroupId: parallelGroupId || generateUUID(),
+            parallelIndex,
+          })
+        )
+      : [];
 
     const message: ChatMessage = {
       id: generateUUID(),
@@ -351,7 +531,10 @@ function PureMultimodalInput({
       metadata: {
         createdAt: new Date(),
         parentMessageId: effectiveParentMessageId,
-        selectedModel: selectedModelId,
+        parallelGroupId,
+        parallelIndex: null,
+        isPrimaryParallel: null,
+        selectedModel: normalizedSelectedModel,
         activeStreamId: null,
         selectedTool: selectedTool || undefined,
       },
@@ -360,10 +543,52 @@ function PureMultimodalInput({
 
     onSendMessage?.(message);
 
-    addMessageToTree(message);
-    saveChatMessage({ message, chatId });
+    const primaryRequest = requestSpecs[0];
 
-    sendMessage(message);
+    if (primaryRequest) {
+      sendMessage(message, {
+        body: {
+          assistantMessageId: primaryRequest.assistantMessageId,
+          selectedModelId: primaryRequest.modelId,
+          parallelGroupId: primaryRequest.parallelGroupId,
+          parallelIndex: primaryRequest.parallelIndex,
+          isPrimaryParallel: true,
+        },
+      });
+
+      addMessageToTree(message);
+      for (const requestSpec of requestSpecs) {
+        addMessageToTree({
+          id: requestSpec.assistantMessageId,
+          parts: [],
+          role: "assistant",
+          metadata: {
+            createdAt: requestSpec.createdAt,
+            parentMessageId: message.id,
+            parallelGroupId: requestSpec.parallelGroupId,
+            parallelIndex: requestSpec.parallelIndex,
+            isPrimaryParallel: requestSpec.isPrimary,
+            selectedModel: requestSpec.modelId,
+            activeStreamId: `pending:${requestSpec.assistantMessageId}`,
+            selectedTool: undefined,
+          },
+        });
+      }
+
+      void runParallelSecondaryRequests({
+        message,
+        secondaryRequestSpecs: requestSpecs.slice(1),
+      }).catch((error) => {
+        console.error("Failed to complete parallel requests", error);
+        toast.error("Failed to complete all parallel responses");
+        void invalidatePersistedMessages();
+      });
+    } else {
+      sendMessage(message);
+      addMessageToTree(message);
+    }
+
+    updateChatUrl(chatId);
 
     // Refocus after submit
     if (!isMobile) {
@@ -374,15 +599,17 @@ function PureMultimodalInput({
     attachments,
     isMobile,
     chatId,
+    invalidatePersistedMessages,
     selectedTool,
     isEditMode,
     getInputValue,
-    saveChatMessage,
     parentMessageId,
-    selectedModelId,
+    normalizedSelectedModel,
     editorRef,
     lastMessageId,
     onSendMessage,
+    requestedModelIds,
+    runParallelSecondaryRequests,
     sendMessage,
     updateChatUrl,
     trimMessagesInEditMode,
@@ -680,10 +907,11 @@ function PureMultimodalInput({
             acceptImages={acceptImages}
             attachmentsEnabled={attachmentsEnabled}
             fileInputRef={fileInputRef}
-            onModelChange={handleModelChange}
+            onModelSelectionChange={handleModelSelectionChange}
             onStop={handleStop}
             parentMessageId={parentMessageId}
             selectedModelId={selectedModelId}
+            selectedModelSelection={selectedModelSelection}
             selectedTool={selectedTool}
             setSelectedTool={setSelectedTool}
             status={status}
@@ -831,7 +1059,8 @@ const AttachmentsButton = memo(PureAttachmentsButton);
 
 function PureChatInputBottomControls({
   selectedModelId,
-  onModelChange,
+  selectedModelSelection,
+  onModelSelectionChange,
   selectedTool,
   setSelectedTool,
   fileInputRef,
@@ -846,7 +1075,8 @@ function PureChatInputBottomControls({
   onStop,
 }: {
   selectedModelId: AppModelId;
-  onModelChange: (modelId: AppModelId) => void;
+  selectedModelSelection: SelectedModelValue;
+  onModelSelectionChange: (selection: SelectedModelValue) => void;
   selectedTool: UiToolName | null;
   setSelectedTool: Dispatch<SetStateAction<UiToolName | null>>;
   fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
@@ -874,8 +1104,9 @@ function PureChatInputBottomControls({
         )}
         <ModelSelector
           className="@[500px]:h-10 h-8 w-fit max-w-none shrink justify-start truncate @[500px]:px-3 px-2 @[500px]:text-sm text-xs"
-          onModelChangeAction={onModelChange}
           selectedModelId={selectedModelId}
+          selectedModelSelection={selectedModelSelection}
+          onModelSelectionChangeAction={onModelSelectionChange}
         />
         <ConnectorsDropdown />
         <ResponsiveTools

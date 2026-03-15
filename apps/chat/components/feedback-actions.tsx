@@ -2,7 +2,7 @@ import { useMessageById } from "@ai-sdk-tools/store";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { toast } from "sonner";
-import type { ChatMessage } from "@/lib/ai/types";
+import { getPrimarySelectedModelId, type ChatMessage } from "@/lib/ai/types";
 import type { Vote } from "@/lib/db/schema";
 import { useSession } from "@/providers/session-provider";
 import { useTRPC } from "@/trpc/react";
@@ -97,9 +97,13 @@ export function FeedbackActions({
 
 function SelectedModelId({ messageId }: { messageId: string }) {
   const message = useMessageById<ChatMessage>(messageId);
-  return message?.metadata?.selectedModel ? (
+  const selectedModelId = getPrimarySelectedModelId(
+    message?.metadata?.selectedModel
+  );
+
+  return selectedModelId ? (
     <div className="ml-2 flex items-center">
-      <Tag>{message.metadata.selectedModel}</Tag>
+      <Tag>{selectedModelId}</Tag>
     </div>
   ) : null;
 }

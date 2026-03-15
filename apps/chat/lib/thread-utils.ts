@@ -3,6 +3,9 @@ export interface MessageNode {
   id: string;
   metadata?: {
     parentMessageId: string | null;
+    parallelGroupId?: string | null;
+    parallelIndex?: number | null;
+    activeStreamId?: string | null;
     createdAt: Date;
   };
 }
@@ -102,8 +105,26 @@ export function buildChildrenMap<T extends MessageNode>(
   }
   for (const siblings of map.values()) {
     siblings.sort(
-      (a, b) =>
-        toTimestamp(a.metadata?.createdAt) - toTimestamp(b.metadata?.createdAt)
+      (a, b) => {
+        const aParallelIndex = a.metadata?.parallelIndex;
+        const bParallelIndex = b.metadata?.parallelIndex;
+        const sameParallelGroup =
+          a.metadata?.parallelGroupId &&
+          a.metadata?.parallelGroupId === b.metadata?.parallelGroupId;
+
+        if (
+          sameParallelGroup &&
+          typeof aParallelIndex === "number" &&
+          typeof bParallelIndex === "number" &&
+          aParallelIndex !== bParallelIndex
+        ) {
+          return aParallelIndex - bParallelIndex;
+        }
+
+        return (
+          toTimestamp(a.metadata?.createdAt) - toTimestamp(b.metadata?.createdAt)
+        );
+      }
     );
   }
   return map;

@@ -1,7 +1,11 @@
 import type { ModelId } from "@/lib/ai/app-models";
 import type { Chat, DBMessage } from "@/lib/db/schema";
 import type { UIChat } from "@/lib/types/ui-chat";
-import type { ChatMessage, UiToolName } from "./ai/types";
+import {
+  isSelectedModelValue,
+  type ChatMessage,
+  type UiToolName,
+} from "./ai/types";
 
 // Helper functions for type conversion
 export function dbChatToUIChat(chat: Chat): UIChat {
@@ -29,7 +33,12 @@ function _dbMessageToChatMessage(message: DBMessage): ChatMessage {
       createdAt: message.createdAt,
       activeStreamId: message.activeStreamId,
       parentMessageId: message.parentMessageId,
-      selectedModel: (message.selectedModel as ModelId) || ("" as ModelId),
+      parallelGroupId: message.parallelGroupId,
+      parallelIndex: message.parallelIndex,
+      isPrimaryParallel: message.isPrimaryParallel,
+      selectedModel: isSelectedModelValue(message.selectedModel)
+        ? message.selectedModel
+        : ("" as ModelId),
       selectedTool: (message.selectedTool as UiToolName | null) || undefined,
       usage: message.lastContext as ChatMessage["metadata"]["usage"],
     },
@@ -66,6 +75,9 @@ export function chatMessageToDbMessage(
     parentMessageId,
     selectedModel,
     selectedTool: message.metadata?.selectedTool || null,
+    parallelGroupId: message.metadata?.parallelGroupId || null,
+    parallelIndex: message.metadata?.parallelIndex ?? null,
+    isPrimaryParallel: message.metadata?.isPrimaryParallel ?? null,
     activeStreamId: message.metadata?.activeStreamId || null,
     canceledAt: null,
   };

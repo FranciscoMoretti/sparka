@@ -19,6 +19,12 @@ export interface MessageSiblingInfo<UM> {
   siblings: UM[];
 }
 
+export interface ParallelGroupInfo<UM> {
+  messages: UM[];
+  parallelGroupId: string;
+  selectedMessageId: string | null;
+}
+
 export type ThreadAugmentedState<UM extends UIMessage> =
   BaseChatStoreState<UM> & {
     threadEpoch: number;
@@ -41,6 +47,7 @@ export type ThreadAugmentedState<UM extends UIMessage> =
     addMessageToTree: (message: UM) => void;
     /** Look up sibling info for a message. */
     getMessageSiblingInfo: (messageId: string) => MessageSiblingInfo<UM> | null;
+    getParallelGroupInfo: (messageId: string) => ParallelGroupInfo<UM> | null;
     /**
      * Switch to a sibling thread. Returns the new thread array,
      * or null if no switch was possible.
@@ -49,6 +56,7 @@ export type ThreadAugmentedState<UM extends UIMessage> =
       messageId: string,
       direction: "prev" | "next"
     ) => UM[] | null;
+    switchToMessage: (messageId: string) => UM[] | null;
   };
 
 export const withThreads =
@@ -63,6 +71,33 @@ export const withThreads =
 
     const rebuildMap = (msgs: UI_MESSAGE[]) =>
       buildChildrenMap(msgs as (UI_MESSAGE & MessageNode)[]);
+
+    const mergeTreeMessages = (
+      serverMessages: UI_MESSAGE[],
+      existingTreeMessages: UI_MESSAGE[],
+      currentVisibleMessages: UI_MESSAGE[]
+    ): UI_MESSAGE[] => {
+      const merged = new Map<string, UI_MESSAGE>();
+
+      for (const message of serverMessages) {
+        merged.set(message.id, message);
+      }
+
+      // Preserve every local-only tree node until the server returns a message with
+      // the same id. Restricting this to pending assistant shells orphaned optimistic
+      // user messages when switching away from an in-flight branch mid-stream.
+      for (const message of existingTreeMessages) {
+        if (!merged.has(message.id)) {
+          merged.set(message.id, message);
+        }
+      }
+
+      for (const message of currentVisibleMessages) {
+        merged.set(message.id, message);
+      }
+
+      return Array.from(merged.values());
+    };
 
     return {
       ...base,
@@ -96,10 +131,28 @@ export const withThreads =
       },
 
       setAllMessages: (messages: UI_MESSAGE[]) => {
+        const currentVisibleMessages = get().messages;
+        const existingTreeMessages = get().allMessages;
+        const mergedMessages = mergeTreeMessages(
+          messages,
+          existingTreeMessages,
+          currentVisibleMessages
+        );
+        const currentLeafId = currentVisibleMessages.at(-1)?.id;
+        const nextVisibleThread = currentLeafId
+          ? (buildThreadFromLeaf(
+              mergedMessages as (UI_MESSAGE & MessageNode)[],
+              currentLeafId
+            ) as UI_MESSAGE[])
+          : currentVisibleMessages;
+
+        originalSetMessages(nextVisibleThread);
         set((state) => ({
           ...state,
-          allMessages: messages,
-          childrenMap: rebuildMap(messages),
+          messages: nextVisibleThread,
+          threadInitialMessages: nextVisibleThread,
+          allMessages: mergedMessages,
+          childrenMap: rebuildMap(mergedMessages),
         }));
       },
 
@@ -135,6 +188,67 @@ export const withThreads =
         return { siblings, siblingIndex };
       },
 
+      getParallelGroupInfo: (
+        messageId: string
+      ): ParallelGroupInfo<UI_MESSAGE> | null => {
+        const state = get();
+        const message = state.allMessages.find((item) => item.id === messageId);
+        if (!message) {
+          return null;
+        }
+
+        const metadata = (message as UI_MESSAGE & MessageNode).metadata;
+        const parallelGroupId = metadata?.parallelGroupId || null;
+        const parentId =
+          message.role === "user"
+            ? message.id
+            : metadata?.parentMessageId || null;
+
+        if (!(parentId && parallelGroupId)) {
+          return null;
+        }
+
+        const groupMessages = (
+          (state.childrenMap.get(parentId) ?? []) as UI_MESSAGE[]
+        )
+          .filter(
+            (candidate) =>
+              (candidate as UI_MESSAGE & MessageNode).metadata
+                ?.parallelGroupId === parallelGroupId
+          )
+          .sort((a, b) => {
+            const aIndex =
+              (a as UI_MESSAGE & MessageNode).metadata?.parallelIndex ??
+              Number.MAX_SAFE_INTEGER;
+            const bIndex =
+              (b as UI_MESSAGE & MessageNode).metadata?.parallelIndex ??
+              Number.MAX_SAFE_INTEGER;
+
+            if (aIndex !== bIndex) {
+              return aIndex - bIndex;
+            }
+
+            return 0;
+          });
+
+        if (groupMessages.length <= 1) {
+          return null;
+        }
+
+        const currentLeafId = state.messages.at(-1)?.id ?? null;
+        const selectedMessageId = groupMessages.some(
+          (candidate) => candidate.id === currentLeafId
+        )
+          ? currentLeafId
+          : null;
+
+        return {
+          messages: groupMessages,
+          parallelGroupId,
+          selectedMessageId,
+        };
+      },
+
       switchToSibling: (
         messageId: string,
         direction: "prev" | "next"
@@ -164,6 +278,29 @@ export const withThreads =
         const newThread = buildThreadFromLeaf(
           allMessages as (UI_MESSAGE & MessageNode)[],
           leaf ? leaf.id : targetSibling.id
+        ) as UI_MESSAGE[];
+
+        state.setMessagesWithEpoch(newThread);
+        return newThread;
+      },
+
+      switchToMessage: (messageId: string): UI_MESSAGE[] | null => {
+        const state = get();
+        const { allMessages, childrenMap } = state;
+        const message = allMessages.find(
+          (candidate) => candidate.id === messageId
+        );
+        if (!message) {
+          return null;
+        }
+
+        const leaf = findLeafDfsToRightFromMessageId(
+          childrenMap as Map<string | null, (UI_MESSAGE & MessageNode)[]>,
+          messageId
+        );
+        const newThread = buildThreadFromLeaf(
+          allMessages as (UI_MESSAGE & MessageNode)[],
+          leaf ? leaf.id : messageId
         ) as UI_MESSAGE[];
 
         state.setMessagesWithEpoch(newThread);

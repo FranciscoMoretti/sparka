@@ -48,6 +48,7 @@
               "features/reasoning",
               "features/sharing",
               "features/branching",
+              "features/parallel-responses",
               "features/projects",
               "features/follow-up-suggestions"
             ]

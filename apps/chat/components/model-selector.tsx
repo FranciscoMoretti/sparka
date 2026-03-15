@@ -1,13 +1,16 @@
 "use client";
 
-import { ChevronRightIcon, ChevronUpIcon, FilterIcon } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, FilterIcon } from "lucide-react";
 import Link from "next/link";
 import {
 	memo,
+	type ReactNode,
 	startTransition,
 	useCallback,
+	useEffect,
 	useMemo,
 	useOptimistic,
+	useRef,
 	useState,
 } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -21,14 +24,27 @@ import {
 	CommandList,
 	CommandItem as UICommandItem,
 } from "@/components/ui/command";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/switch";
 import { LoginCtaBanner } from "@/components/upgrade-cta/login-cta-banner";
 import type { AppModelDefinition, AppModelId } from "@/lib/ai/app-models";
+import {
+	getPrimarySelectedModelId,
+	isSelectedModelCounts,
+	type SelectedModelValue,
+} from "@/lib/ai/types";
+import { config } from "@/lib/config";
 import { getEnabledFeatures } from "@/lib/features-config";
 import { ANONYMOUS_LIMITS } from "@/lib/types/anonymous";
 import { cn } from "@/lib/utils";
@@ -84,16 +100,42 @@ function getFeatureIcons(model: AppModelDefinition) {
 	return icons;
 }
 
+function buildMultiModelSelection(
+	modelIds: AppModelId[],
+): Record<AppModelId, number> {
+	return modelIds.reduce<Record<AppModelId, number>>(
+		(acc, modelId) => {
+			acc[modelId] = 1;
+			return acc;
+		},
+		{} as Record<AppModelId, number>,
+	);
+}
+
+function getSelectionCount(selection: SelectedModelValue): number {
+	if (typeof selection === "string") {
+		return 1;
+	}
+
+	return Object.values(selection).reduce((count, value) => count + value, 0);
+}
+
 function PureCommandItem({
 	model,
 	disabled,
 	isSelected,
+	count,
+	selectionControl,
 	onSelect,
+	onCountChange,
 }: {
 	model: AppModelDefinition;
 	disabled?: boolean;
 	isSelected: boolean;
+	count?: number;
+	selectionControl?: ReactNode;
 	onSelect: () => void;
+	onCountChange?: (delta: number) => void;
 }) {
 	const featureIcons = useMemo(() => getFeatureIcons(model), [model]);
 	const searchValue = useMemo(
@@ -118,6 +160,7 @@ function PureCommandItem({
 			value={searchValue}
 		>
 			<div className="flex min-w-0 flex-1 items-center gap-2.5">
+				{selectionControl}
 				<div className="shrink-0">
 					<ModelSelectorLogo modelId={model.id} />
 				</div>
@@ -133,9 +176,45 @@ function PureCommandItem({
 					)}
 				</span>
 			</div>
-			{featureIcons.length > 0 && (
-				<div className="flex shrink-0 items-center gap-1">{featureIcons}</div>
-			)}
+			<div className="flex shrink-0 items-center gap-1">
+				{featureIcons}
+				{isSelected && onCountChange && count !== undefined && (
+					<DropdownMenu>
+						<DropdownMenuTrigger
+							asChild
+							onClick={(e) => e.stopPropagation()}
+							onMouseDown={(e) => e.stopPropagation()}
+						>
+							<button
+								className="flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 font-semibold text-foreground text-xs tabular-nums hover:bg-primary/25"
+								type="button"
+							>
+								{count}×
+								<ChevronDownIcon className="h-2.5 w-2.5" />
+							</button>
+						</DropdownMenuTrigger>
+						<DropdownMenuContent
+							align="end"
+							onKeyDown={(e) => e.stopPropagation()}
+						>
+							{[1, 2, 3, 4].map((n) => (
+								<DropdownMenuItem
+									key={n}
+									onClick={(e) => {
+										e.stopPropagation();
+										onCountChange(n - count);
+									}}
+								>
+									{n}x
+									{n === count && (
+										<CheckIcon className="ml-auto h-3 w-3" />
+									)}
+								</DropdownMenuItem>
+							))}
+						</DropdownMenuContent>
+					</DropdownMenu>
+				)}
+			</div>
 		</UICommandItem>
 	);
 }
@@ -145,16 +224,20 @@ const CommandItem = memo(
 	(prev, next) =>
 		prev.model.id === next.model.id &&
 		prev.disabled === next.disabled &&
-		prev.isSelected === next.isSelected,
+		prev.isSelected === next.isSelected &&
+		prev.count === next.count &&
+		(prev.onCountChange !== undefined) === (next.onCountChange !== undefined),
 );
 
 function PureModelSelector({
 	selectedModelId,
+	selectedModelSelection,
 	className,
-	onModelChangeAction,
+	onModelSelectionChangeAction,
 }: {
 	selectedModelId: AppModelId;
-	onModelChangeAction?: (modelId: AppModelId) => void;
+	selectedModelSelection: SelectedModelValue;
+	onModelSelectionChangeAction?: (selection: SelectedModelValue) => void;
 	className?: string;
 }) {
 	const { data: session } = useSession();
@@ -163,15 +246,43 @@ function PureModelSelector({
 
 	const [open, setOpen] = useState(false);
 	const [filterOpen, setFilterOpen] = useState(false);
-	const [optimisticModelId, setOptimisticModelId] =
-		useOptimistic(selectedModelId);
+	const [optimisticSelection, setOptimisticSelection] = useOptimistic(
+		selectedModelSelection,
+	);
+	// Ref so callbacks don't capture stale optimisticSelection in their closure
+	const optimisticSelectionRef = useRef(optimisticSelection);
+	optimisticSelectionRef.current = optimisticSelection;
 	const [featureFilters, setFeatureFilters] =
 		useState<FeatureFilter>(initialFilters);
+	const [useMultipleModels, setUseMultipleModels] = useState(
+		isSelectedModelCounts(selectedModelSelection),
+	);
 
 	interface ModelItem {
 		disabled: boolean;
 		model: AppModelDefinition;
 	}
+
+	useEffect(() => {
+		setUseMultipleModels(isSelectedModelCounts(selectedModelSelection));
+	}, [selectedModelSelection]);
+
+	const optimisticModelId = useMemo(
+		() => getPrimarySelectedModelId(optimisticSelection) ?? selectedModelId,
+		[optimisticSelection, selectedModelId],
+	);
+
+	const selectedModelIds = useMemo(() => {
+		if (typeof optimisticSelection === "string") {
+			return new Set<AppModelId>([optimisticSelection]);
+		}
+
+		return new Set<AppModelId>(
+			Object.entries(optimisticSelection)
+				.filter(([, count]) => count > 0)
+				.map(([modelId]) => modelId as AppModelId),
+		);
+	}, [optimisticSelection]);
 
 	const models = useMemo<ModelItem[]>(
 		() =>
@@ -255,16 +366,118 @@ function PureModelSelector({
 		() => Object.values(featureFilters).filter(Boolean).length,
 		[featureFilters],
 	);
+	const selectedModelCount = useMemo(
+		() => getSelectionCount(optimisticSelection),
+		[optimisticSelection],
+	);
+	const triggerLabel = useMemo(() => {
+		if (useMultipleModels && selectedModelCount > 1) {
+			return `${selectedItem?.model.name || "Selected model"} +${selectedModelCount - 1}`;
+		}
 
-	const selectModel = useCallback(
+		return selectedItem?.model.name || "Select model";
+	}, [selectedItem?.model.name, selectedModelCount, useMultipleModels]);
+
+	const selectSingleModel = useCallback(
 		(id: AppModelId) => {
 			startTransition(() => {
-				setOptimisticModelId(id);
-				onModelChangeAction?.(id);
+				setOptimisticSelection(id);
+				onModelSelectionChangeAction?.(id);
 				setOpen(false);
 			});
 		},
-		[onModelChangeAction, setOptimisticModelId],
+		[onModelSelectionChangeAction, setOptimisticSelection],
+	);
+
+	const toggleMultiModel = useCallback(
+		(id: AppModelId) => {
+			startTransition(() => {
+				const current = optimisticSelectionRef.current;
+				const currentCounts: Record<AppModelId, number> =
+					typeof current === "string"
+						? ({ [current]: 1 } as Record<AppModelId, number>)
+						: (current as Record<AppModelId, number>);
+
+				const isAlreadySelected = (currentCounts[id] ?? 0) > 0;
+
+				let nextSelection: Record<AppModelId, number>;
+				if (isAlreadySelected) {
+					const remaining = Object.entries(currentCounts).filter(
+						([k, v]) => k !== id && v > 0,
+					);
+					if (remaining.length === 0) return;
+					nextSelection = Object.fromEntries(remaining) as Record<
+						AppModelId,
+						number
+					>;
+				} else {
+					nextSelection = { ...currentCounts, [id]: 1 } as Record<
+						AppModelId,
+						number
+					>;
+				}
+
+				setOptimisticSelection(nextSelection);
+				onModelSelectionChangeAction?.(nextSelection);
+			});
+		},
+		[onModelSelectionChangeAction, setOptimisticSelection],
+	);
+
+	const handleCountChange = useCallback(
+		(id: AppModelId, delta: number) => {
+			startTransition(() => {
+				const current = optimisticSelectionRef.current;
+				const currentCounts: Record<AppModelId, number> =
+					typeof current === "string"
+						? ({ [current]: 1 } as Record<AppModelId, number>)
+						: (current as Record<AppModelId, number>);
+
+				const newCount = (currentCounts[id] ?? 0) + delta;
+				let nextSelection: SelectedModelValue;
+
+				if (newCount <= 0) {
+					const remaining = Object.entries(currentCounts).filter(
+						([k, v]) => k !== id && v > 0,
+					);
+					if (remaining.length === 0) return;
+					nextSelection = Object.fromEntries(remaining) as Record<
+						AppModelId,
+						number
+					>;
+				} else {
+					nextSelection = { ...currentCounts, [id]: newCount } as Record<
+						AppModelId,
+						number
+					>;
+				}
+
+				setOptimisticSelection(nextSelection);
+				onModelSelectionChangeAction?.(nextSelection);
+			});
+		},
+		[onModelSelectionChangeAction, setOptimisticSelection],
+	);
+
+	const handleMultipleModelsToggle = useCallback(
+		(checked: boolean) => {
+			setUseMultipleModels(checked);
+
+			if (checked) {
+				const nextSelection = buildMultiModelSelection([optimisticModelId]);
+				startTransition(() => {
+					setOptimisticSelection(nextSelection);
+					onModelSelectionChangeAction?.(nextSelection);
+				});
+				return;
+			}
+
+			startTransition(() => {
+				setOptimisticSelection(optimisticModelId);
+				onModelSelectionChangeAction?.(optimisticModelId);
+			});
+		},
+		[onModelSelectionChangeAction, optimisticModelId, setOptimisticSelection],
 	);
 
 	return (
@@ -284,7 +497,7 @@ function PureModelSelector({
 							</div>
 						)}
 						<p className="inline-flex items-center gap-1.5 truncate">
-							{selectedItem?.model.name || "Select model"}
+							{triggerLabel}
 							{selectedItem?.model.reasoning && reasoningConfig && (
 								<span
 									className="inline-flex shrink-0 items-center gap-1"
@@ -306,10 +519,13 @@ function PureModelSelector({
 			<PopoverContent
 				align="start"
 				className="w-[350px] p-0"
+				onFocusOutside={(e) => e.preventDefault()}
 				onInteractOutside={(e) => {
-					// Prevent closing when interacting with nested filter popover
+					// Prevent closing when interacting with nested popovers rendered in portals
 					if (
-						(e.target as HTMLElement).closest('[data-slot="command-input"]')
+						(e.target as HTMLElement).closest(
+							"[data-radix-popper-content-wrapper]",
+						)
 					) {
 						e.preventDefault();
 					}
@@ -396,6 +612,21 @@ function PureModelSelector({
 								</PopoverContent>
 							</Popover>
 						</div>
+						{!isAnonymous && config.features.parallelResponses && (
+							<div className="flex items-center justify-between border-b px-3 py-2">
+								<Label
+									className="cursor-pointer text-sm"
+									htmlFor="use-multiple-models"
+								>
+									Use Multiple Models
+								</Label>
+								<Switch
+									checked={useMultipleModels}
+									id="use-multiple-models"
+									onCheckedChange={handleMultipleModelsToggle}
+								/>
+							</div>
+						)}
 						{hasDisabledModels && (
 							<div className="p-3">
 								<LoginCtaBanner
@@ -411,15 +642,45 @@ function PureModelSelector({
 						>
 							<CommandEmpty>No model found.</CommandEmpty>
 							<CommandGroup>
-								{filteredModels.map(({ model, disabled }) => (
-									<CommandItem
-										disabled={disabled}
-										isSelected={model.id === optimisticModelId}
-										key={model.id}
-										model={model}
-										onSelect={() => selectModel(model.id)}
-									/>
-								))}
+								{filteredModels.map(({ model, disabled }) => {
+									const isSelected = useMultipleModels
+										? selectedModelIds.has(model.id)
+										: model.id === optimisticModelId;
+									const count =
+										useMultipleModels &&
+										typeof optimisticSelection !== "string"
+											? (optimisticSelection as Record<AppModelId, number>)[
+													model.id
+												] ?? 0
+											: undefined;
+									return (
+										<CommandItem
+											count={isSelected ? count : undefined}
+											disabled={disabled}
+											isSelected={isSelected}
+											key={model.id}
+											model={model}
+											onCountChange={
+												useMultipleModels
+													? (delta) => handleCountChange(model.id, delta)
+													: undefined
+											}
+											onSelect={() =>
+												useMultipleModels
+													? toggleMultiModel(model.id)
+													: selectSingleModel(model.id)
+											}
+											selectionControl={
+												useMultipleModels ? (
+													<Checkbox
+														checked={isSelected}
+														className="pointer-events-none"
+													/>
+												) : null
+											}
+										/>
+									);
+								})}
 							</CommandGroup>
 						</CommandList>
 						{!isAnonymous && (
@@ -448,6 +709,7 @@ export const ModelSelector = memo(
 	PureModelSelector,
 	(prev, next) =>
 		prev.selectedModelId === next.selectedModelId &&
+		prev.selectedModelSelection === next.selectedModelSelection &&
 		prev.className === next.className &&
-		prev.onModelChangeAction === next.onModelChangeAction,
+		prev.onModelSelectionChangeAction === next.onModelSelectionChangeAction,
 );
