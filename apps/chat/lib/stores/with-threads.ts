@@ -72,24 +72,6 @@ export const withThreads =
     const rebuildMap = (msgs: UI_MESSAGE[]) =>
       buildChildrenMap(msgs as (UI_MESSAGE & MessageNode)[]);
 
-    const isPendingParallelShell = (message: UI_MESSAGE) => {
-      const metadata = (
-        message as UI_MESSAGE & {
-          metadata?: {
-            activeStreamId?: string | null;
-            parallelGroupId?: string | null;
-          };
-        }
-      ).metadata;
-
-      return (
-        message.role === "assistant" &&
-        !!metadata?.parallelGroupId &&
-        typeof metadata.activeStreamId === "string" &&
-        metadata.activeStreamId.startsWith("pending:")
-      );
-    };
-
     const mergeTreeMessages = (
       serverMessages: UI_MESSAGE[],
       existingTreeMessages: UI_MESSAGE[],
@@ -101,8 +83,11 @@ export const withThreads =
         merged.set(message.id, message);
       }
 
+      // Preserve every local-only tree node until the server returns a message with
+      // the same id. Restricting this to pending assistant shells orphaned optimistic
+      // user messages when switching away from an in-flight branch mid-stream.
       for (const message of existingTreeMessages) {
-        if (!merged.has(message.id) && isPendingParallelShell(message)) {
+        if (!merged.has(message.id)) {
           merged.set(message.id, message);
         }
       }
@@ -203,7 +188,9 @@ export const withThreads =
         return { siblings, siblingIndex };
       },
 
-      getParallelGroupInfo: (messageId: string): ParallelGroupInfo<UI_MESSAGE> | null => {
+      getParallelGroupInfo: (
+        messageId: string
+      ): ParallelGroupInfo<UI_MESSAGE> | null => {
         const state = get();
         const message = state.allMessages.find((item) => item.id === messageId);
         if (!message) {
@@ -221,17 +208,21 @@ export const withThreads =
           return null;
         }
 
-        const groupMessages = ((state.childrenMap.get(parentId) ?? []) as UI_MESSAGE[])
+        const groupMessages = (
+          (state.childrenMap.get(parentId) ?? []) as UI_MESSAGE[]
+        )
           .filter(
             (candidate) =>
-              (candidate as UI_MESSAGE & MessageNode).metadata?.parallelGroupId ===
-              parallelGroupId
+              (candidate as UI_MESSAGE & MessageNode).metadata
+                ?.parallelGroupId === parallelGroupId
           )
           .sort((a, b) => {
             const aIndex =
-              (a as UI_MESSAGE & MessageNode).metadata?.parallelIndex ?? Number.MAX_SAFE_INTEGER;
+              (a as UI_MESSAGE & MessageNode).metadata?.parallelIndex ??
+              Number.MAX_SAFE_INTEGER;
             const bIndex =
-              (b as UI_MESSAGE & MessageNode).metadata?.parallelIndex ?? Number.MAX_SAFE_INTEGER;
+              (b as UI_MESSAGE & MessageNode).metadata?.parallelIndex ??
+              Number.MAX_SAFE_INTEGER;
 
             if (aIndex !== bIndex) {
               return aIndex - bIndex;
@@ -296,7 +287,9 @@ export const withThreads =
       switchToMessage: (messageId: string): UI_MESSAGE[] | null => {
         const state = get();
         const { allMessages, childrenMap } = state;
-        const message = allMessages.find((candidate) => candidate.id === messageId);
+        const message = allMessages.find(
+          (candidate) => candidate.id === messageId
+        );
         if (!message) {
           return null;
         }
