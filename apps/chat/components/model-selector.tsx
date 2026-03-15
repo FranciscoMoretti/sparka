@@ -44,6 +44,7 @@ import {
 	isSelectedModelCounts,
 	type SelectedModelValue,
 } from "@/lib/ai/types";
+import { config } from "@/lib/config";
 import { getEnabledFeatures } from "@/lib/features-config";
 import { ANONYMOUS_LIMITS } from "@/lib/types/anonymous";
 import { cn } from "@/lib/utils";
@@ -611,7 +612,7 @@ function PureModelSelector({
 								</PopoverContent>
 							</Popover>
 						</div>
-						{!isAnonymous && (
+						{!isAnonymous && config.features.parallelResponses && (
 							<div className="flex items-center justify-between border-b px-3 py-2">
 								<Label
 									className="cursor-pointer text-sm"

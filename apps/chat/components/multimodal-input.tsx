@@ -161,7 +161,9 @@ function PureMultimodalInput({
     () => expandSelectedModelValue(normalizedSelectedModel),
     [normalizedSelectedModel]
   );
-  const isParallelModelRequest = requestedModelIds.length > 1;
+  const parallelResponsesEnabled = config.features.parallelResponses;
+  const isParallelModelRequest =
+    parallelResponsesEnabled && requestedModelIds.length > 1;
 
   // Attachment configuration from site config
   const { maxBytes, maxDimension, acceptedTypes } = config.attachments;

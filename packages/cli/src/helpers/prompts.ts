@@ -25,6 +25,7 @@ const FEATURE_DEFAULTS: Record<FeatureKey, boolean> = {
   imageGeneration: false,
   attachments: false,
   followupSuggestions: true,
+  parallelResponses: true,
 };
 
 const AUTH_DEFAULTS: Record<AuthProvider, boolean> = {
@@ -42,6 +43,7 @@ const FEATURE_LABELS: Record<FeatureKey, string> = {
   imageGeneration: "Image Generation",
   attachments: "File Attachments",
   followupSuggestions: "Follow-up Suggestions",
+  parallelResponses: "Parallel Responses",
 };
 
 const AUTH_LABELS: Record<AuthProvider, string> = {

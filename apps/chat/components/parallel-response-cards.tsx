@@ -22,7 +22,7 @@ function PureParallelResponseCards({
   const message = useMessageById<ChatMessage>(messageId);
   const parallelGroupInfo = useParallelGroupInfo(messageId);
   const navigateToMessage = useNavigateToMessage();
-  const { getModelById } = useChatModels();
+  const { getModelById, models } = useChatModels();
 
   const cardSlots = useMemo(() => {
     if (
@@ -59,16 +59,18 @@ function PureParallelResponseCards({
           ? getPrimarySelectedModelId(right.message.metadata.selectedModel)
           : right.modelId;
 
-      const leftModelName = leftModelId
-        ? getModelById(leftModelId)?.name ?? leftModelId
-        : "Model";
-      const rightModelName = rightModelId
-        ? getModelById(rightModelId)?.name ?? rightModelId
-        : "Model";
+      const leftIndex = leftModelId
+        ? models.findIndex((m) => m.id === leftModelId)
+        : -1;
+      const rightIndex = rightModelId
+        ? models.findIndex((m) => m.id === rightModelId)
+        : -1;
 
-      const modelNameComparison = leftModelName.localeCompare(rightModelName);
-      if (modelNameComparison !== 0) {
-        return modelNameComparison;
+      const leftOrder = leftIndex === -1 ? Infinity : leftIndex;
+      const rightOrder = rightIndex === -1 ? Infinity : rightIndex;
+
+      if (leftOrder !== rightOrder) {
+        return leftOrder - rightOrder;
       }
 
       const leftMessageId =
@@ -78,7 +80,7 @@ function PureParallelResponseCards({
 
       return leftMessageId.localeCompare(rightMessageId);
     });
-  }, [cardSlots, getModelById]);
+  }, [cardSlots, models]);
 
   const selectedParallelIndex = useMemo(() => {
     if (parallelGroupInfo?.selectedMessageId) {

@@ -16,6 +16,7 @@ export const FEATURE_KEYS = [
   "imageGeneration",
   "attachments",
   "followupSuggestions",
+  "parallelResponses",
 ] as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[number];
