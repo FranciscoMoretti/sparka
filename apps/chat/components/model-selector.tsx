@@ -637,7 +637,7 @@ function PureModelSelector({
 							</div>
 						)}
 						<CommandList
-							className="max-h-[400px]"
+							className="max-h-[min(25dvh,400px)]"
 							onMouseDown={(e) => e.stopPropagation()}
 						>
 							<CommandEmpty>No model found.</CommandEmpty>
