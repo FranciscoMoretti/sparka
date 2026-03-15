@@ -52,6 +52,7 @@ interface ChatInputProviderProps {
   isProjectContext?: boolean;
   localStorageEnabled?: boolean;
   overrideModelId?: AppModelId; // For message editing where we want to use the original model
+  overrideModelSelection?: SelectedModelValue; // For message editing with multi-model selection
 }
 
 export function ChatInputProvider({
@@ -60,6 +61,7 @@ export function ChatInputProvider({
   initialTool = null,
   initialAttachments = [],
   overrideModelId,
+  overrideModelSelection,
   localStorageEnabled = true,
   isProjectContext = false,
 }: ChatInputProviderProps) {
@@ -103,7 +105,9 @@ export function ChatInputProvider({
     overrideModelId || defaultModel
   );
   const [selectedModelSelection, setSelectedModelSelection] =
-    useState<SelectedModelValue>(overrideModelId || defaultModel);
+    useState<SelectedModelValue>(
+      overrideModelSelection ?? overrideModelId ?? defaultModel
+    );
 
   // IMPORTANT: do not read localStorage during initial render.
   // Next SSRs client components; localStorage is client-only and will cause hydration mismatches
