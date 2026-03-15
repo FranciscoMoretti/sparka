@@ -3,11 +3,11 @@ title: Adding Tools
 description: Install a tool from the registry into your ChatJS project with one command
 ---
 
-> Run `chatjs add <name>` to download a tool's implementation and renderer, and wire them into your project automatically.
+> Run `add <name>` to download a tool's implementation and renderer, and wire them into your project automatically.
 
 ## Overview
 
-The `chatjs add` command fetches a tool from the registry, writes its files to your project, and injects the imports and exports into `tools/index.ts` — the CLI-managed file that connects tools to the rest of the app.
+The `add` command fetches a tool from the registry, writes its files to your project, and injects the imports and exports into `tools/index.ts` — the CLI-managed file that connects tools to the rest of the app.
 
 You never edit `tools/index.ts` by hand. The CLI keeps it in sync.
 
@@ -66,15 +66,22 @@ npx @chat-js/cli@latest add word-count image-resizer pdf-summary
 
 ## Options
 
-| Flag              | Default | Description                                  |
-| ----------------- | ------- | -------------------------------------------- |
-| `-y, --yes`       | `false` | Skip the confirmation prompt.                |
-| `-c, --cwd <cwd>` | `cwd`   | Working directory (where `chat.config.ts` lives). |
-| `-r, --registry <url>` | —  | Override the registry URL (see below).       |
+| Flag                   | Default | Description                                       |
+| ---------------------- | ------- | ------------------------------------------------- |
+| `-y, --yes`            | `false` | Skip the confirmation prompt.                     |
+| `-o, --overwrite`      | `false` | Overwrite existing files without prompting.       |
+| `-c, --cwd <cwd>`      | `cwd`   | Working directory (where `chat.config.ts` lives). |
+| `-r, --registry <url>` | —       | Override the registry URL (see below).            |
 
-## Re-running is safe
+## Re-running on an existing tool
 
-The command is idempotent. Running it again on an already-installed tool overwrites the files but does not duplicate the entries in `tools/index.ts`.
+If a tool's files already exist, the CLI will prompt you to confirm before overwriting them. Pass `--overwrite` to skip the prompt:
+
+```bash
+npx @chat-js/cli@latest add word-count --overwrite
+```
+
+The entries in `tools/index.ts` are never duplicated — re-running is always safe regardless of whether you overwrite the files.
 
 ## Use a local registry (monorepo development)
 

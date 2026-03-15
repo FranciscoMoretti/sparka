@@ -15,6 +15,7 @@ export const add = new Command()
   .description("add a tool to an existing ChatJS project")
   .argument("[tools...]", "tool names to add (e.g. word-count)")
   .option("-y, --yes", "skip confirmation prompt", false)
+  .option("-o, --overwrite", "overwrite existing files without prompting", false)
   .option(
     "-c, --cwd <cwd>",
     "the working directory (defaults to current directory)",
@@ -90,15 +91,34 @@ export const add = new Command()
         }
 
         // 2. Write files to disk
-        const writeSpinner = spinner("Writing files...");
-        writeSpinner.start();
+        const overwrite = opts.overwrite as boolean;
         try {
-          const written = await writeToolFiles(cwd, item.files);
-          writeSpinner.succeed(
-            written.map((f) => path.relative(cwd, f)).join(", ")
-          );
+          // First pass: skip existing files unless --overwrite
+          const writeSpinner = spinner("Writing files...");
+          writeSpinner.start();
+          const { written, existing } = await writeToolFiles(cwd, item.files, {
+            overwrite,
+          });
+          writeSpinner.stop();
+
+          if (existing.length > 0 && !overwrite) {
+            const answer = await confirm({
+              message: `${existing.map((f) => path.relative(cwd, f)).join(", ")} already exist. Overwrite?`,
+            });
+            if (isCancel(answer) || !answer) {
+              log.warn(`Skipped ${name}`);
+              continue;
+            }
+            // Write the files that were skipped
+            const { written: rest } = await writeToolFiles(cwd, item.files, {
+              overwrite: true,
+            });
+            written.push(...rest);
+          }
+
+          log.step(written.map((f) => path.relative(cwd, f)).join(", "));
         } catch (err) {
-          writeSpinner.fail("Failed to write files");
+          log.error("Failed to write files");
           throw err;
         }
 
