@@ -1,0 +1,96 @@
+---
+title: Adding Tools
+description: Install a tool from the registry into your ChatJS project with one command
+---
+
+> Run `chatjs add <name>` to download a tool's implementation and renderer, and wire them into your project automatically.
+
+## Overview
+
+The `chatjs add` command fetches a tool from the registry, writes its files to your project, and injects the imports and exports into `tools/index.ts` — the CLI-managed file that connects tools to the rest of the app.
+
+You never edit `tools/index.ts` by hand. The CLI keeps it in sync.
+
+## Install a tool
+
+```bash
+npx @chat-js/cli@latest add word-count
+```
+
+That's it. The command:
+
+1. Fetches `word-count.json` from the registry
+2. Writes `tools/word-count/tool.ts` and `tools/word-count/renderer.tsx`
+3. Injects the import and registration into `tools/index.ts`
+4. Installs any npm dependencies the tool declares
+
+## What changes in your project
+
+**New files:**
+
+```
+tools/
+  word-count/
+    tool.ts       ← backend: schema + execute function
+    renderer.tsx  ← frontend: renders the tool's output
+```
+
+**Updated `tools/index.ts`** (CLI-managed, do not edit manually):
+
+```ts title="tools/index.ts"
+// [chatjs-registry:imports]
+import { WordCountRenderer } from "@/tools/word-count/renderer";
+import { wordCount } from "@/tools/word-count/tool";
+// [/chatjs-registry:imports]
+
+export const tools = {
+  // [chatjs-registry:tools]
+  wordCount,
+  // [/chatjs-registry:tools]
+} as const;
+
+export const ui = {
+  // [chatjs-registry:ui]
+  "tool-wordCount": WordCountRenderer,
+  // [/chatjs-registry:ui]
+};
+```
+
+The `tools` export is consumed by the chat API route and typed end-to-end via `InstalledTools`. The `ui` map is used by the renderer registry to look up the right component for each tool call part.
+
+## Install multiple tools at once
+
+```bash
+npx @chat-js/cli@latest add word-count image-resizer pdf-summary
+```
+
+## Options
+
+| Flag              | Default | Description                                  |
+| ----------------- | ------- | -------------------------------------------- |
+| `-y, --yes`       | `false` | Skip the confirmation prompt.                |
+| `-c, --cwd <cwd>` | `cwd`   | Working directory (where `chat.config.ts` lives). |
+| `-r, --registry <url>` | —  | Override the registry URL (see below).       |
+
+## Re-running is safe
+
+The command is idempotent. Running it again on an already-installed tool overwrites the files but does not duplicate the entries in `tools/index.ts`.
+
+## Use a local registry (monorepo development)
+
+When developing tools inside the `chat-js` monorepo, point the CLI at the local registry package instead of the remote one:
+
+```bash
+# via flag
+npx @chat-js/cli@latest add word-count \
+  --registry ./packages/registry/items/{name}.json \
+  --cwd apps/chat
+
+# or set it once in .env.local
+CHATJS_REGISTRY_URL=./packages/registry/items/{name}.json
+```
+
+## Related
+
+- [Tools](/cookbook/tools) — how to build a tool and publish it to the registry
+- [cli add](/cli/add) — full command reference

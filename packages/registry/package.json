@@ -1,0 +1,9 @@
+{
+  "name": "@chat-js/registry",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ChatJS tool registry items",
+  "scripts": {
+    "build": "bun build.ts"
+  }
+}

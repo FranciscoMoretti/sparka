@@ -1,0 +1,19 @@
+{
+  "name": "word-count",
+  "description": "Count words, characters, and sentences in text",
+  "dependencies": [],
+  "files": [
+    {
+      "path": "tool.ts",
+      "type": "tool",
+      "target": "tools/word-count/tool.ts",
+      "content": "import { tool } from \"ai\";\nimport { z } from \"zod\";\n\nexport const wordCount = tool({\n  description: \"Count the words, characters, and sentences in a given text\",\n  inputSchema: z.object({\n    text: z.string().describe(\"The text to analyze\"),\n  }),\n  execute: async ({ text }: { text: string }) => {\n    const words = text.trim() === \"\" ? 0 : text.trim().split(/\\s+/).length;\n    const characters = text.length;\n    const charactersNoSpaces = text.replace(/\\s/g, \"\").length;\n    const sentences = text\n      .split(/[.!?]+/)\n      .filter((s) => s.trim().length > 0).length;\n\n    return { words, characters, charactersNoSpaces, sentences };\n  },\n});\n\nexport type WordCountOutput = {\n  words: number;\n  characters: number;\n  charactersNoSpaces: number;\n  sentences: number;\n};\n"
+    },
+    {
+      "path": "renderer.tsx",
+      "type": "renderer",
+      "target": "tools/word-count/renderer.tsx",
+      "content": "\"use client\";\n\nimport type { WordCountOutput } from \"./tool\";\n\n// Typed locally to avoid circular imports (tools/ ← lib/ai/types ← installed-tools ← tools/)\ntype WordCountPart =\n  | { state: \"input-available\" | \"input-streaming\"; output?: never }\n  | { state: \"output-available\"; output: WordCountOutput };\n\nexport function WordCountRenderer({ tool }: { tool: unknown }) {\n  const part = tool as WordCountPart;\n\n  if (part.state === \"input-available\") {\n    return (\n      <div className=\"rounded-lg border p-3 text-muted-foreground text-sm\">\n        Counting words...\n      </div>\n    );\n  }\n\n  if (part.state !== \"output-available\") {\n    return null;\n  }\n\n  const { words, characters, charactersNoSpaces, sentences } = part.output;\n\n  return (\n    <div className=\"grid grid-cols-2 gap-2 rounded-lg border p-3 text-sm sm:grid-cols-4\">\n      <Stat label=\"Words\" value={words} />\n      <Stat label=\"Characters\" value={characters} />\n      <Stat label=\"No spaces\" value={charactersNoSpaces} />\n      <Stat label=\"Sentences\" value={sentences} />\n    </div>\n  );\n}\n\nfunction Stat({ label, value }: { label: string; value: number }) {\n  return (\n    <div className=\"flex flex-col items-center gap-1\">\n      <span className=\"font-semibold text-lg\">{value}</span>\n      <span className=\"text-muted-foreground text-xs\">{label}</span>\n    </div>\n  );\n}\n"
+    }
+  ]
+}

@@ -115,6 +115,7 @@
               "cookbook/stop-resumable-streams",
               "cookbook/tool-part",
               "cookbook/tools",
+              "cookbook/add-tools",
               "cookbook/provisional-ids",
               "cookbook/credit-tracking",
               "cookbook/neon-branching",

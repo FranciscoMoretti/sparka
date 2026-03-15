@@ -1,27 +1,57 @@
 ---
 title: add
-description: Add a component or feature to an existing ChatJS project
+description: Add a tool to an existing ChatJS project
 ---
 
 ```bash
-npx @chat-js/cli@latest add [components...] [options]
+npx @chat-js/cli@latest add [tools...] [options]
 ```
 
 ## Arguments
 
-| Argument       | Description                          |
-| -------------- | ------------------------------------ |
-| `components…`  | One or more component names to add.  |
+| Argument   | Description                         |
+| ---------- | ----------------------------------- |
+| `tools…`   | One or more tool names to install.  |
 
 ## Options
 
-| Flag              | Default | Description                                            |
-| ----------------- | ------- | ------------------------------------------------------ |
-| `-y, --yes`       | `false` | Skip confirmation prompt.                              |
-| `-c, --cwd <cwd>` | `cwd`   | The working directory (defaults to current directory). |
+| Flag                    | Default | Description                                                    |
+| ----------------------- | ------- | -------------------------------------------------------------- |
+| `-y, --yes`             | `false` | Skip confirmation prompt.                                      |
+| `-c, --cwd <cwd>`       | `cwd`   | Working directory (where `chat.config.ts` lives).              |
+| `-r, --registry <url>`  | —       | Registry URL or local path template. Overrides `CHATJS_REGISTRY_URL`. |
 
-## Status
+## Examples
 
-<Note>
-  The `add` command is not yet implemented. It is reserved for a future release that will let you add features, auth providers, and gateways to existing projects without re-scaffolding.
-</Note>
+```bash
+# Install a single tool
+npx @chat-js/cli@latest add word-count
+
+# Install multiple tools, skip confirmation
+npx @chat-js/cli@latest add word-count pdf-summary --yes
+
+# Use a local registry (monorepo development)
+npx @chat-js/cli@latest add word-count \
+  --registry ./packages/registry/items/{name}.json \
+  --cwd apps/chat
+```
+
+## What it does
+
+For each tool name, the command:
+
+1. Fetches `{name}.json` from the registry
+2. Writes the tool's files into your project (under the path configured in `chat.config.ts`)
+3. Installs any npm dependencies the tool declares
+4. Injects imports and registrations into `tools/index.ts`
+
+## Environment variables
+
+| Variable               | Description                                        |
+| ---------------------- | -------------------------------------------------- |
+| `CHATJS_REGISTRY_URL`  | Default registry URL template. The `{name}` placeholder is replaced with the tool name. Useful for pointing to a local registry without passing `--registry` every time. |
+
+## Related
+
+- [Adding Tools](/cookbook/add-tools) — step-by-step walkthrough
+- [Tools](/cookbook/tools) — how to build and publish a tool
