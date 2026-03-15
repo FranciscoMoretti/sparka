@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckIcon, ChevronRightIcon, ChevronUpIcon, FilterIcon } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, ChevronRightIcon, ChevronUpIcon, FilterIcon } from "lucide-react";
 import Link from "next/link";
 import {
 	memo,
@@ -185,10 +185,11 @@ function PureCommandItem({
 							onMouseDown={(e) => e.stopPropagation()}
 						>
 							<button
-								className="min-w-[28px] rounded px-1 py-0.5 text-center font-medium text-muted-foreground text-xs tabular-nums hover:bg-muted hover:text-foreground"
+								className="flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 font-semibold text-primary text-xs tabular-nums hover:bg-primary/25"
 								type="button"
 							>
-								{count}x
+								{count}×
+								<ChevronDownIcon className="h-2.5 w-2.5" />
 							</button>
 						</DropdownMenuTrigger>
 						<DropdownMenuContent
