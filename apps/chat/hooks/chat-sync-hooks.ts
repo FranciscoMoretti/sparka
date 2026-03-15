@@ -324,6 +324,11 @@ export function useSaveMessageMutation() {
             qc.invalidateQueries({
               queryKey: trpc.chat.getChatById.queryKey({ chatId }),
             }),
+            // Refetch the full message tree so parallel response siblings get
+            // their updated activeStreamId from the server (not just the selected one).
+            qc.invalidateQueries({
+              queryKey: trpc.chat.getChatMessages.queryKey({ chatId }),
+            }),
           ]);
         } else {
           // Refresh anonymous credits from cookie

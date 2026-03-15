@@ -113,7 +113,12 @@ export function useParallelGroupInfo(
       return (
         a.parallelGroupId === b.parallelGroupId &&
         a.selectedMessageId === b.selectedMessageId &&
-        a.messages.length === b.messages.length
+        a.messages.length === b.messages.length &&
+        a.messages.every(
+          (msg, i) =>
+            msg.id === b.messages[i]?.id &&
+            msg.metadata?.activeStreamId === b.messages[i]?.metadata?.activeStreamId
+        )
       );
     }
   );
