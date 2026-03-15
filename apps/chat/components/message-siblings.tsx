@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { memo } from "react";
 import { Action } from "@/components/ai-elements/actions";
 import { useNavigateToSibling } from "@/hooks/use-navigate-to-sibling";
+import { useMessageRoleById } from "@/lib/stores/hooks-base";
 import {
   useMessageSiblingInfo,
   useParallelGroupInfo,
@@ -18,12 +19,16 @@ function PureMessageSiblings({
   const { data: session } = useSession();
   const _isAuthenticated = !!session?.user;
 
+  const role = useMessageRoleById(messageId);
   const siblingInfo = useMessageSiblingInfo(messageId);
   const parallelGroupInfo = useParallelGroupInfo(messageId);
   const navigateToSibling = useNavigateToSibling();
   const hasSiblings = siblingInfo && siblingInfo.siblings.length > 1;
 
-  if (parallelGroupInfo) {
+  // Hide sibling nav for assistant messages in a parallel group — those use
+  // the response cards for navigation. User messages should always show
+  // sibling nav even when they spawned parallel responses.
+  if (parallelGroupInfo && role === "assistant") {
     return null;
   }
 
