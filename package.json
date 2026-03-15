@@ -29,9 +29,6 @@
 		"start:chat": "dotenv -e .env.local -- bun --filter=@chatjs/chat run start",
 		"release": "changeset publish"
 	},
-	"overrides": {
-		"@lobehub/ui": "~2.24.3"
-	},
 	"devDependencies": {
 		"@changesets/changelog-github": "^0.5.2",
 		"@changesets/cli": "^2.29.8",
