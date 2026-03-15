@@ -392,23 +392,30 @@ function PureModelSelector({
 		(id: AppModelId) => {
 			startTransition(() => {
 				const current = optimisticSelectionRef.current;
-				const currentSelectedIds =
+				const currentCounts: Record<AppModelId, number> =
 					typeof current === "string"
-						? [current]
-						: Object.entries(current)
-								.filter(([, count]) => count > 0)
-								.map(([modelId]) => modelId as AppModelId);
+						? ({ [current]: 1 } as Record<AppModelId, number>)
+						: (current as Record<AppModelId, number>);
 
-				const isAlreadySelected = currentSelectedIds.includes(id);
-				const nextSelectedIds = isAlreadySelected
-					? currentSelectedIds.filter((modelId) => modelId !== id)
-					: [...currentSelectedIds, id];
+				const isAlreadySelected = (currentCounts[id] ?? 0) > 0;
 
-				if (nextSelectedIds.length === 0) {
-					return;
+				let nextSelection: Record<AppModelId, number>;
+				if (isAlreadySelected) {
+					const remaining = Object.entries(currentCounts).filter(
+						([k, v]) => k !== id && v > 0,
+					);
+					if (remaining.length === 0) return;
+					nextSelection = Object.fromEntries(remaining) as Record<
+						AppModelId,
+						number
+					>;
+				} else {
+					nextSelection = { ...currentCounts, [id]: 1 } as Record<
+						AppModelId,
+						number
+					>;
 				}
 
-				const nextSelection = buildMultiModelSelection(nextSelectedIds);
 				setOptimisticSelection(nextSelection);
 				onModelSelectionChangeAction?.(nextSelection);
 			});
